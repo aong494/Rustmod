@@ -1,5 +1,7 @@
 package com.example.examplemod;
 
+import com.example.examplemod.gui.RustStyleChestScreen;
+import com.example.examplemod.gui.RustStyleLargeChestScreen;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.registries.Registries;
@@ -27,6 +29,9 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import org.slf4j.Logger;
+import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.world.inventory.MenuType;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(ExampleMod.MODID)
@@ -63,7 +68,6 @@ public class ExampleMod
     public ExampleMod(FMLJavaModLoadingContext context)
     {
         IEventBus modEventBus = context.getModEventBus();
-
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
 
@@ -120,9 +124,24 @@ public class ExampleMod
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event)
         {
-            // Some client setup code
-            LOGGER.info("HELLO FROM CLIENT SETUP");
-            LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
+            event.enqueueWork(() -> {
+                // [안전 장치] try-catch로 감싸서 중복 등록 에러가 나더라도 게임이 꺼지지 않게 합니다.
+                try {
+                    // 작은 상자 등록
+                    MenuScreens.register(MenuType.GENERIC_9x3, RustStyleChestScreen::new);
+                } catch (IllegalStateException e) {
+                    LOGGER.warn("RUST_UI: 9x3 screen already registered, skipping...");
+                }
+
+                try {
+                    // 큰 상자 등록
+                    MenuScreens.register(MenuType.GENERIC_9x6, RustStyleLargeChestScreen::new);
+                } catch (IllegalStateException e) {
+                    LOGGER.warn("RUST_UI: 9x6 screen already registered, skipping...");
+                }
+
+                LOGGER.info("RUST_UI: Registered all chest screens safely.");
+            });
         }
     }
 }

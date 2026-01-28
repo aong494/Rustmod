@@ -60,5 +60,4 @@ public class Config
                 // ResourceLocation.tryParse를 사용하여 안전하게 객체를 생성합니다.
                 .map(itemName -> ForgeRegistries.ITEMS.getValue(ResourceLocation.tryParse(itemName)))
                 .collect(Collectors.toSet());
-    }
-}
+    }}

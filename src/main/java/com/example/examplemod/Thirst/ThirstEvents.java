@@ -4,12 +4,14 @@ import com.example.examplemod.Hunger.HungerCapability;
 import com.example.examplemod.Hunger.HungerProvider;
 import com.example.examplemod.Hunger.HungerSyncPacket;
 import com.example.examplemod.ModMessages;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -32,6 +34,10 @@ import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 
 @Mod.EventBusSubscriber(modid = "examplemod")
 public class ThirstEvents {
+    // ThirstEvents 클래스 맨 윗부분에 추가하세요
+    private static final java.util.UUID THIRST_SLOW_ID = java.util.UUID.fromString("d8955132-706a-4952-8703-9b9220935392");
+    private static final net.minecraft.world.entity.ai.attributes.AttributeModifier THIRST_SLOW_MODIFIER =
+            new net.minecraft.world.entity.ai.attributes.AttributeModifier(THIRST_SLOW_ID, "Thirst Slowdown", -0.3D, net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.MULTIPLY_TOTAL);
 
     // 1. 플레이어 생성 시 Capability 부착
     @SubscribeEvent
@@ -86,12 +92,29 @@ public class ThirstEvents {
                 }
 
                 // 조건 2: 수분 0 도달 - 대미지 및 달리기 불가
-                if (current <= 0) {
-                    player.setSprinting(false);
-                    if (player.tickCount % 40 == 0) {
-                        player.hurt(player.damageSources().starve(), 1.0f);
+                    AttributeInstance speed = player.getAttribute(Attributes.MOVEMENT_SPEED);
+
+                    if (current <= 0) {
+                        // 1. 수분이 0이면 달리기 즉시 해제
+                        if (player.isSprinting()) {
+                            player.setSprinting(false);
+                        }
+
+                        // 2. 이동 속도 디버프 부여 (이게 있어야 달리기가 원천 봉쇄됩니다)
+                        if (speed != null && !speed.hasModifier(THIRST_SLOW_MODIFIER)) {
+                            speed.addTransientModifier(THIRST_SLOW_MODIFIER);
+                        }
+
+                        // 3. 아사 대미지
+                        if (player.tickCount % 40 == 0) {
+                            player.hurt(player.damageSources().starve(), 1.0f);
+                        }
+                    } else {
+                        // 수분이 회복되면 속도 디버프 제거
+                        if (speed != null && speed.hasModifier(THIRST_SLOW_MODIFIER)) {
+                            speed.removeModifier(THIRST_SLOW_ID);
+                        }
                     }
-                }
             });
         }
     }
@@ -134,10 +157,23 @@ public class ThirstEvents {
     }
     @SubscribeEvent
     public static void onSprint(TickEvent.PlayerTickEvent event) {
-        if (event.phase == TickEvent.Phase.START && event.player.isSprinting()) {
-            event.player.getCapability(ThirstProvider.PLAYER_THIRST).ifPresent((ThirstCapability data) -> {
+        // START 페이즈에서 처리해야 달리기 판정 전에 차단 가능
+        if (event.phase == TickEvent.Phase.START) {
+            Player player = event.player;
+
+            // 서버와 클라이언트 양쪽에서 모두 체크
+            player.getCapability(ThirstProvider.PLAYER_THIRST).ifPresent((ThirstCapability data) -> {
                 if (data.getThirst() <= 0) {
-                    event.player.setSprinting(false);
+                    if (player.isSprinting()) {
+                        player.setSprinting(false);
+
+                        // 클라이언트일 경우, 달리기 키 입력을 무력화하기 위해 FOV나 물리 로직에 개입
+                        if (event.side.isClient()) {
+                            player.setSprinting(false);
+                            // 마인크래프트 클라이언트의 보행 속도 패킷 전송을 억제
+                            Minecraft.getInstance().options.keySprint.setDown(false);
+                        }
+                    }
                 }
             });
         }
