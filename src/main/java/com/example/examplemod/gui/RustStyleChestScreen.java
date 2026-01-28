@@ -52,41 +52,34 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
             e.printStackTrace();
         }
     }
-
     @Override
+
     protected void init() {
         super.init();
-
         int sSize = 28;
         int offset = 3;
-
         // --- [1] 상자 슬롯 (0~26) 및 인벤토리 (27~62) 배치 (기존 코드 유지) ---
         setupSlots();
-
         // --- [2] 장비 및 커스텀 슬롯 좌표 설정 ---
         // 인벤토리 화면과 똑같은 위치로 잡으려면 0, 325 근처가 적당합니다.
         this.armorStartX = 0;
         this.armorStartY = 325;
-
         // 커스텀 슬롯 2칸 위치 (갑옷 4칸 바로 옆)
         this.extraX0 = armorStartX + (4 * sSize) + offset;
         this.extraY0 = armorStartY + offset;
         this.extraX1 = armorStartX + (5 * sSize) + offset;
         this.extraY1 = armorStartY + offset;
-
         // 커스텀 슬롯 데이터 로드
         this.minecraft.player.getCapability(PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
             this.extraSlot0 = cap.inventory.getStackInSlot(0).copy();
             this.extraSlot1 = cap.inventory.getStackInSlot(1).copy();
         });
     }
-
     private void setupSlots() {
         int sSize = 28;
         int offset = 3;
         int chestStartX = 348;
         int chestStartY = 199;
-
         // 상자 27칸
         for (int i = 0; i < 27; i++) {
             Slot slot = this.menu.slots.get(i);
@@ -94,7 +87,6 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
             if (i < 24) setSlotPos(slot, (col * sSize) + chestStartX + offset, (row * sSize) + chestStartY + offset);
             else setSlotPos(slot, ((i - 24) * sSize) + chestStartX + offset, (4 * sSize) + chestStartY + offset);
         }
-
         // 플레이어 인벤토리
         int invStartX = 174;
         int invStartY = 255;
@@ -102,7 +94,6 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
             setSlotPos(this.menu.slots.get(i + 27), (i % 6 * sSize) + invStartX + offset, (i / 6 * sSize) + invStartY + offset);
         }
         for (int i = 24; i < 27; i++) setSlotPos(this.menu.slots.get(i + 27), -2000, -2000);
-
         // 핫바 6칸
         for (int i = 0; i < 9; i++) {
             Slot slot = this.menu.slots.get(i + 54);
@@ -119,21 +110,21 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
         // 1. 일반 슬롯 렌더링
         renderVanillaSlots(guiGraphics, mouseX, mouseY);
 
-        // 2. 갑옷 4칸 렌더링 (실시간 참조)
-        for (int i = 0; i < 4; i++) {
-            // 머리(3), 가슴(2), 바지(1), 장화(0) 순서
-            ItemStack armorStack = this.minecraft.player.getInventory().getArmor(3 - i);
-            renderVirtualSlot(guiGraphics, armorStack, armorStartX + (i * 28) + 3, armorStartY + 3, mouseX, mouseY);
+        // 2. 갑옷 4칸 렌더링 (인벤토리에서 직접 참조)
+        if (this.minecraft.player != null) {
+            for (int i = 0; i < 4; i++) {
+                // 서버가 보낸 패킷이 inventory.armor에 저장되므로 여기서 실시간 참조
+                ItemStack armorStack = this.minecraft.player.getInventory().armor.get(3 - i);
+                renderVirtualSlot(guiGraphics, armorStack, armorStartX + (i * 28) + 3, armorStartY + 3, mouseX, mouseY);
+            }
+
+            // 3. 커스텀 슬롯 2칸 렌더링 (Capability 직접 참조)
+            this.minecraft.player.getCapability(PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
+                renderVirtualSlot(guiGraphics, cap.inventory.getStackInSlot(0), extraX0, extraY0, mouseX, mouseY);
+                renderVirtualSlot(guiGraphics, cap.inventory.getStackInSlot(1), extraX1, extraY1, mouseX, mouseY);
+            });
         }
 
-        // 3. 커스텀 슬롯 2칸 렌더링 (변수 대신 Capability에서 직접 가져오기)
-        this.minecraft.player.getCapability(PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
-            // 이제 extraSlot0 변수 대신 cap의 데이터를 바로 렌더링합니다.
-            renderVirtualSlot(guiGraphics, cap.inventory.getStackInSlot(0), extraX0, extraY0, mouseX, mouseY);
-            renderVirtualSlot(guiGraphics, cap.inventory.getStackInSlot(1), extraX1, extraY1, mouseX, mouseY);
-        });
-
-        // 마우스 아이템 및 툴팁
         renderMouseItem(guiGraphics, mouseX, mouseY);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
@@ -161,31 +152,41 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
                 return true; // 여기서 true를 반환하면 클릭 처리가 완료됨
             }
         }
-
         // 2. 커스텀 슬롯 0번 (인덱스 4)
         if (isHovering(extraX0, extraY0, 18, 18, mouseX, mouseY)) {
             ModMessages.sendToServer(new ArmorSwapPacket(4));
-            // [중요] updateClientExtraSlots() 삭제! 서버가 보내주는 패킷을 기다려야 합니다.
+        // [중요] updateClientExtraSlots() 삭제! 서버가 보내주는 패킷을 기다려야 합니다.
             return true;
         }
-
         // 3. 커스텀 슬롯 1번 (인덱스 5)
         if (isHovering(extraX1, extraY1, 18, 18, mouseX, mouseY)) {
             ModMessages.sendToServer(new ArmorSwapPacket(5));
             // [중요] updateClientExtraSlots() 삭제!
             return true;
         }
-
         // 그 외의 영역(상자 안 등) 클릭은 원래대로 처리
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    // 클릭 후 클라이언트 화면에 보이는 아이템을 즉시 동기화하기 위한 보조 로직
-    private void updateClientExtraSlots() {
-        this.minecraft.player.getCapability(PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
-            this.extraSlot0 = cap.inventory.getStackInSlot(0);
-            this.extraSlot1 = cap.inventory.getStackInSlot(1);
-        });
+    private void handleArmorClick(int armorIdx) {
+        ItemStack carried = this.menu.getCarried();
+        // 여기서 서버로 패킷을 보내 마우스 아이템과 플레이어의 갑옷 슬롯을 교체해야 합니다.
+        // ModMessages.sendToServer(new ArmorSwapPacket(armorIdx));
+    }
+
+    private void handleCustomSlotClick(int index) {
+        ItemStack carried = this.menu.getCarried();
+        if (index == 0) {
+            ItemStack temp = this.extraSlot0.copy();
+            this.extraSlot0 = carried.copy();
+            this.menu.setCarried(temp);
+            ModMessages.sendToServer(new SyncExtraSlotPacket(0, this.extraSlot0));
+        } else {
+            ItemStack temp = this.extraSlot1.copy();
+            this.extraSlot1 = carried.copy();
+            this.menu.setCarried(temp);
+            ModMessages.sendToServer(new SyncExtraSlotPacket(1, this.extraSlot1));
+        }
     }
 
     // --- 헬퍼 메서드들 (기존 로직 유지) ---

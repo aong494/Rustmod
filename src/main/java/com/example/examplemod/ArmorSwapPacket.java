@@ -25,48 +25,48 @@ public class ArmorSwapPacket {
         buffer.writeInt(slotIdx);
     }
 
+// ArmorSwapPacket.java
+
     public boolean handle(Supplier<NetworkEvent.Context> supplier) {
         NetworkEvent.Context context = supplier.get();
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
             if (player == null) return;
 
-            ItemStack carried = player.containerMenu.getCarried();
+            ItemStack carried = player.containerMenu.getCarried().copy(); // 복사본 필수
 
-            // --- [1] 아이템 교체 로직 ---
+            // 1. 갑옷 슬롯 처리
             if (slotIdx >= 0 && slotIdx <= 3) {
-                // 갑옷 슬롯 처리
-                ItemStack armor = player.getInventory().getArmor(slotIdx).copy();
+                ItemStack oldArmor = player.getInventory().armor.get(slotIdx).copy();
                 EquipmentSlot eSlot = getEquipmentSlot(slotIdx);
 
                 if (carried.isEmpty() || carried.canEquip(eSlot, player)) {
-                    player.getInventory().armor.set(slotIdx, carried.copy());
-                    player.containerMenu.setCarried(armor);
+                    // 서버 데이터 변경
+                    player.getInventory().armor.set(slotIdx, carried);
+                    player.containerMenu.setCarried(oldArmor);
+
+                    // [추가] 커스텀 패킷으로 클라이언트 갑옷 칸을 즉시 갱신 (잔상 방지 핵심)
+                    ModMessages.sendToPlayer(new SyncArmorPacket(slotIdx, carried), player);
                 }
-            } else if (slotIdx == 4 || slotIdx == 5) {
-                // 커스텀 슬롯 처리 (4->0, 5->1)
+            }
+            // 2. 커스텀 슬롯 처리
+            else if (slotIdx == 4 || slotIdx == 5) {
                 int gearIdx = slotIdx - 4;
                 player.getCapability(PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
-                    ItemStack gear = cap.inventory.getStackInSlot(gearIdx).copy();
-                    cap.inventory.setStackInSlot(gearIdx, carried.copy());
-                    player.containerMenu.setCarried(gear);
+                    ItemStack oldGear = cap.inventory.getStackInSlot(gearIdx).copy();
+                    cap.inventory.setStackInSlot(gearIdx, carried);
+                    player.containerMenu.setCarried(oldGear);
 
-                    // 커스텀 슬롯 데이터 즉시 동기화
+                    // 커스텀 슬롯 데이터 동기화
                     ModMessages.sendToPlayer(new SyncGearPacket(cap.inventory.serializeNBT()), player);
                 });
             }
 
-            // --- [2] 모든 메뉴 동기화 (실시간 반영 핵심) ---
-
-            // 현재 화면(상자)과 인벤토리 메뉴 둘 다 갱신
-            player.inventoryMenu.broadcastChanges();
+            // 3. 마우스에 든 아이템 강제 동기화 (이게 없으면 아이템 복사 현상 발생)
             player.containerMenu.broadcastChanges();
-
-            // 마우스 아이템 상태 강제 전송 (Container ID -1은 마우스 전용)
-            // 1.20.1 버전의 생성자: (containerId, stateId, slotIdx, itemStack)
-            player.connection.send(new ClientboundContainerSetSlotPacket(
-                    -1,
-                    player.containerMenu.getStateId(),
+            player.connection.send(new net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket(
+                    -1, // 커서 아이템
+                    player.containerMenu.incrementStateId(),
                     -1,
                     player.containerMenu.getCarried()
             ));

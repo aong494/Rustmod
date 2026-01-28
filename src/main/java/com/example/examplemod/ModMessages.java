@@ -53,6 +53,11 @@ public class ModMessages {
                 .encoder(SyncGearPacket::toBytes)
                 .consumerMainThread(SyncGearPacket::handle)
                 .add();
+        net.messageBuilder(SyncArmorPacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(SyncArmorPacket::new)
+                .encoder(SyncArmorPacket::toBytes)
+                .consumerMainThread(SyncArmorPacket::handle)
+                .add();
     }
 
     // 서버가 플레이어에게 보낼 때 (기존)

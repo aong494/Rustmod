@@ -1,5 +1,7 @@
 package com.example.examplemod.menu;
 
+import com.example.examplemod.capability.PlayerGearCapability;
+import com.example.examplemod.gui.CustomGearSlot;
 import net.minecraft.world.Container;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -15,46 +17,56 @@ public class RustChestMenu extends AbstractContainerMenu {
     private final Container container;
     private final int containerRows;
 
-    // 9x3(작은 상자) 또는 9x6(큰 상자) 여부에 따라 행 개수를 조절합니다.
     public RustChestMenu(MenuType<?> type, int id, Inventory playerInventory, Container container, int rows) {
         super(type, id);
         this.container = container;
         this.containerRows = rows;
         container.startOpen(playerInventory.player);
 
-        // 1. 상자 슬롯 (0 ~ N)
+        // 1. 상자 슬롯 (Index 0 ~ 26)
         for (int i = 0; i < this.containerRows * 9; ++i) {
-            this.addSlot(new Slot(container, i, 0, 0)); // 좌표는 스크린의 init에서 재설정됨
+            this.addSlot(new Slot(container, i, 0, 0));
         }
 
-        // 2. 플레이어 일반 인벤토리 (상자 슬롯 이후)
+        // 2. 플레이어 일반 인벤토리 (Index 27 ~ 53)
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 9; ++j) {
                 this.addSlot(new Slot(playerInventory, j + i * 9 + 9, 0, 0));
             }
         }
 
-        // 3. 핫바
+        // 3. 핫바 (Index 54 ~ 62)
         for (int i = 0; i < 9; ++i) {
             this.addSlot(new Slot(playerInventory, i, 0, 0));
         }
 
-        // 4. [핵심] 장비 슬롯 (갑옷 4종)
+        // 4. 장비 슬롯 (Index 63 ~ 66)
         for (int i = 0; i < 4; ++i) {
-            final EquipmentSlot slotType = EquipmentSlot.values()[5 - i]; // HEAD, CHEST, LEGS, FEET 순서
+            final EquipmentSlot slotType = getEquipmentSlotFromLoop(i);
             this.addSlot(new Slot(playerInventory, 39 - i, 0, 0) {
                 @Override
                 public boolean mayPlace(ItemStack stack) { return stack.canEquip(slotType, playerInventory.player); }
-                @Override
-                public boolean mayPickup(Player player) {
-                    ItemStack itemstack = this.getItem();
-                    return (itemstack.isEmpty() || player.isCreative() || !EnchantmentHelper.hasBindingCurse(itemstack)) && super.mayPickup(player);
-                }
+                // ... mayPickup 로직 동일 ...
             });
         }
 
-        // 5. 보조손 슬롯
-        this.addSlot(new Slot(playerInventory, 40, 0, 0));
+// 5. [삭제된 부분] 보조손 슬롯(40번)을 추가하던 코드를 지웁니다.
+
+// 6. 커스텀 슬롯 2개 추가 (이제 Index 67, 68이 됩니다)
+        playerInventory.player.getCapability(PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
+            this.addSlot(new CustomGearSlot(cap.inventory, 0, 0, 0)); // Index 67
+            this.addSlot(new CustomGearSlot(cap.inventory, 1, 0, 0)); // Index 68
+        });
+    }
+
+    // EquipmentSlot 순서를 안전하게 가져오기 위한 헬퍼
+    private EquipmentSlot getEquipmentSlotFromLoop(int i) {
+        return switch (i) {
+            case 0 -> EquipmentSlot.HEAD;
+            case 1 -> EquipmentSlot.CHEST;
+            case 2 -> EquipmentSlot.LEGS;
+            default -> EquipmentSlot.FEET;
+        };
     }
 
     // 9x3, 9x6 각각을 위한 정적 생성자 (Registry 등록용)
