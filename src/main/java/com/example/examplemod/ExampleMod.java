@@ -1,5 +1,6 @@
 package com.example.examplemod;
 
+import com.example.examplemod.capability.PlayerGearCapability;
 import com.example.examplemod.gui.RustStyleChestScreen;
 import com.example.examplemod.gui.RustStyleLargeChestScreen;
 import com.mojang.logging.LogUtils;
@@ -16,10 +17,12 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.event.BuildCreativeModeTabContentsEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -32,10 +35,16 @@ import org.slf4j.Logger;
 import net.minecraft.client.gui.screens.MenuScreens;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import software.bernie.geckolib.GeckoLib;
+import com.example.examplemod.block.ModBlocks;
+import com.example.examplemod.block.ModBlockEntities;
+import com.example.examplemod.block.renderer.BigDoorRenderer;
+
+
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(ExampleMod.MODID)
-public class ExampleMod
+public class    ExampleMod
 {
     // Define mod id in a common place for everything to reference
     public static final String MODID = "examplemod";
@@ -64,28 +73,24 @@ public class ExampleMod
             .displayItems((parameters, output) -> {
                 output.accept(EXAMPLE_ITEM.get()); // Add the example item to the tab. For your own tabs, this method is preferred over the event
             }).build());
+    public static final RegistryObject<Item> BIG_DOOR_ITEM = ITEMS.register("big_door",
+            () -> new BlockItem(ModBlocks.BIG_DOOR.get(), new Item.Properties()));
 
-    public ExampleMod(FMLJavaModLoadingContext context)
-    {
+    public ExampleMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
-        // Register the commonSetup method for modloading
-        modEventBus.addListener(this::commonSetup);
+        GeckoLib.initialize();
 
-        // Register the Deferred Register to the mod event bus so blocks get registered
+        ModBlocks.BLOCKS.register(modEventBus);
+        ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+
         BLOCKS.register(modEventBus);
-        // Register the Deferred Register to the mod event bus so items get registered
         ITEMS.register(modEventBus);
-        // Register the Deferred Register to the mod event bus so tabs get registered
         CREATIVE_MODE_TABS.register(modEventBus);
 
-        // Register ourselves for server and other game events we are interested in
+        modEventBus.addListener(this::commonSetup);
         MinecraftForge.EVENT_BUS.register(this);
-
-        // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);
-
-        // Register our mod's ForgeConfigSpec so that Forge can create and load the config file for us
-        context.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 
     private void commonSetup(final FMLCommonSetupEvent event)
@@ -103,10 +108,10 @@ public class ExampleMod
     }
 
     // Add the example block item to the building blocks tab
-    private void addCreative(BuildCreativeModeTabContentsEvent event)
-    {
-        if (event.getTabKey() == CreativeModeTabs.BUILDING_BLOCKS)
-            event.accept(EXAMPLE_BLOCK_ITEM);
+    private void addCreative(BuildCreativeModeTabContentsEvent event) {
+        if (event.getTabKey() == CreativeModeTabs.FUNCTIONAL_BLOCKS) {
+            event.accept(BIG_DOOR_ITEM);
+        }
     }
 
     // You can use SubscribeEvent and let the Event Bus discover methods to call
@@ -142,6 +147,11 @@ public class ExampleMod
 
                 LOGGER.info("RUST_UI: Registered all chest screens safely.");
             });
+        }
+        @SubscribeEvent
+        public static void registerRenderers(final net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
+            event.registerBlockEntityRenderer(ModBlockEntities.BIG_DOOR.get(),
+                    context -> new com.example.examplemod.block.renderer.BigDoorRenderer(context));
         }
     }
 }

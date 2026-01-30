@@ -167,28 +167,6 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
         // 그 외의 영역(상자 안 등) 클릭은 원래대로 처리
         return super.mouseClicked(mouseX, mouseY, button);
     }
-
-    private void handleArmorClick(int armorIdx) {
-        ItemStack carried = this.menu.getCarried();
-        // 여기서 서버로 패킷을 보내 마우스 아이템과 플레이어의 갑옷 슬롯을 교체해야 합니다.
-        // ModMessages.sendToServer(new ArmorSwapPacket(armorIdx));
-    }
-
-    private void handleCustomSlotClick(int index) {
-        ItemStack carried = this.menu.getCarried();
-        if (index == 0) {
-            ItemStack temp = this.extraSlot0.copy();
-            this.extraSlot0 = carried.copy();
-            this.menu.setCarried(temp);
-            ModMessages.sendToServer(new SyncExtraSlotPacket(0, this.extraSlot0));
-        } else {
-            ItemStack temp = this.extraSlot1.copy();
-            this.extraSlot1 = carried.copy();
-            this.menu.setCarried(temp);
-            ModMessages.sendToServer(new SyncExtraSlotPacket(1, this.extraSlot1));
-        }
-    }
-
     // --- 헬퍼 메서드들 (기존 로직 유지) ---
     private void renderVanillaSlots(GuiGraphics g, int mx, int my) {
         for (Slot slot : this.menu.slots) {

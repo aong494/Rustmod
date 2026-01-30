@@ -1,8 +1,9 @@
-// PlayerGearCapability.java
 package com.example.examplemod.capability;
 
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.CapabilityManager;
 import net.minecraftforge.common.capabilities.CapabilityToken;
@@ -44,5 +45,26 @@ public class PlayerGearCapability {
 
         @Override
         public void deserializeNBT(CompoundTag nbt) { gear.deserializeNBT(nbt); }
+    }
+    /**
+     * 커스텀 슬롯에 들어갈 수 있는 아이템인지 확인하는 공통 로직
+     * @param slotIndex 슬롯 번호 (0: 배낭 슬롯, 1: 토템 슬롯)
+     * @param stack 검사할 아이템
+     */
+    public static boolean isItemValid(int slotIndex, ItemStack stack) {
+        if (stack.isEmpty()) return false;
+
+        // 0번 슬롯: 배낭만 가능
+        if (slotIndex == 0) {
+            // 실제 모드 아이템으로 변경 필요 (예: ModItems.BACKPACK.get())
+            return stack.getItem().toString().equals("examplemod:backpack");
+        }
+
+        // 1번 슬롯: 불사의 토템만 가능
+        else if (slotIndex == 1) {
+            return stack.is(Items.TOTEM_OF_UNDYING);
+        }
+
+        return false;
     }
 }

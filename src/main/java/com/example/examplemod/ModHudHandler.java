@@ -19,6 +19,8 @@ public class ModHudHandler {
     // 경로에 대문자가 없는지 다시 확인하세요!
     private static final ResourceLocation HUD_BG = ResourceLocation.tryParse("examplemod:textures/gui/hud_bg.png");
     private static final ResourceLocation HP_ICON = ResourceLocation.tryParse("examplemod:textures/gui/icons/hp_icon.png");
+    private static final ResourceLocation HUNGER_ICON2 = ResourceLocation.tryParse("examplemod:textures/gui/icons/hunger_icon2.png");
+    private static final ResourceLocation THIRST_ICON2 = ResourceLocation.tryParse("examplemod:textures/gui/icons/thirst_icon2.png");
     private static final ResourceLocation HUNGER_ICON = ResourceLocation.tryParse("examplemod:textures/gui/icons/hunger_icon.png");
     private static final ResourceLocation THIRST_ICON = ResourceLocation.tryParse("examplemod:textures/gui/icons/thirst_icon.png");
     private static final ResourceLocation DEBUFF_BG = ResourceLocation.tryParse("examplemod:textures/gui/hud_bg2.png");
@@ -63,12 +65,12 @@ public class ModHudHandler {
         int alertY = barYStart - 20;
 
         if (com.example.examplemod.Hunger.ClientHungerData.get() <= 40.0f) {
-            renderStatusAlert(guiGraphics, mc, DEBUFF_BG, HUNGER_ICON, "배고픔", alertX, alertY, 0xFFD87820);
+            renderStatusAlert(guiGraphics, mc, DEBUFF_BG, HUNGER_ICON2, "배고픔", alertX, alertY, 0xFFD87820);
             alertY -= 18;
         }
 
         if (ClientThirstData.get() <= 25.0f) {
-            renderStatusAlert(guiGraphics, mc, DEBUFF_BG, THIRST_ICON, "목마름", alertX, alertY, 0xFF1DA1F2);
+            renderStatusAlert(guiGraphics, mc, DEBUFF_BG, THIRST_ICON2, "목마름", alertX, alertY, 0xFF1DA1F2);
             alertY -= 18;
         }
     }
@@ -78,7 +80,7 @@ public class ModHudHandler {
         RenderSystem.defaultBlendFunc();
 
         // 1. 배경 그리기 (알파값 1.0으로 선명하게)
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 0.2F);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);
         guiGraphics.blit(bg, x, y, 0, 0, 120, 16, 150, 20);
 
@@ -86,6 +88,7 @@ public class ModHudHandler {
         if (icon != null) {
             guiGraphics.blit(icon, x + 5, y + 3, 0, 0, 10, 10, 10, 10);
         }
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1F);
 
         // 3. 텍스트 렌더링 (굵기 보강 및 위치 조정)
         guiGraphics.pose().pushPose();

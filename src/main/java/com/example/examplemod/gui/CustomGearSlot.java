@@ -1,5 +1,6 @@
 package com.example.examplemod.gui;
 
+import com.example.examplemod.capability.PlayerGearCapability; // import 추가
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.items.SlotItemHandler;
@@ -12,7 +13,7 @@ public class CustomGearSlot extends SlotItemHandler {
 
     @Override
     public boolean mayPlace(@NotNull ItemStack stack) {
-        // 이 부분이 true여야 아이템을 놓을 수 있습니다.
-        return true;
+        // [수정] 공통 로직을 호출하여 검사합니다.
+        return PlayerGearCapability.isItemValid(this.getSlotIndex(), stack);
     }
 }

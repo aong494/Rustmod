@@ -3,12 +3,24 @@ package com.example.examplemod;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 @Mod.EventBusSubscriber(modid = "examplemod", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class ModAttributeHandler {
+    private static void syncGear(Player player) {
+        if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            serverPlayer.getCapability(com.example.examplemod.capability.PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
+                com.example.examplemod.ModMessages.sendToPlayer(
+                        new com.example.examplemod.SyncGearPacket(
+                                cap.inventory.getStackInSlot(0),
+                                cap.inventory.getStackInSlot(1)
+                        ), serverPlayer);
+            });
+        }
+    }
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
@@ -27,6 +39,7 @@ public class ModAttributeHandler {
             if (healthToRestore <= 0) healthToRestore = 60.0F;
             player.setHealth(healthToRestore);
         });
+        syncGear(player);
     }
     @SubscribeEvent
     public static void onPlayerClone(PlayerEvent.Clone event) {
@@ -38,6 +51,14 @@ public class ModAttributeHandler {
         if (newMaxHealth != null) {
             newMaxHealth.setBaseValue(100.0D);
         }
+        if (!event.isWasDeath()) {
+            oldPlayer.getCapability(com.example.examplemod.capability.PlayerGearCapability.GEAR_CAPABILITY).ifPresent(oldCap -> {
+                newPlayer.getCapability(com.example.examplemod.capability.PlayerGearCapability.GEAR_CAPABILITY).ifPresent(newCap -> {
+                    newCap.inventory.setStackInSlot(0, oldCap.inventory.getStackInSlot(0));
+                    newCap.inventory.setStackInSlot(1, oldCap.inventory.getStackInSlot(1));
+                });
+            });
+        }
 
         // 2. 부활(Death)인지, 차원 이동(Dimension Change)인지 구분
         if (event.isWasDeath()) {
@@ -47,6 +68,28 @@ public class ModAttributeHandler {
         } else {
             // 차원 이동 등은 기존 체력 유지
             newPlayer.setHealth(oldPlayer.getHealth());
+        }
+    }
+    @SubscribeEvent
+    public static void onPlayerDrops(net.minecraftforge.event.entity.living.LivingDropsEvent event) {
+        // 플레이어가 죽었을 때만 실행
+        if (event.getEntity() instanceof net.minecraft.world.entity.player.Player player && !player.level().isClientSide) {
+            player.getCapability(com.example.examplemod.capability.PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
+                for (int i = 0; i < cap.inventory.getSlots(); i++) {
+                    ItemStack stack = cap.inventory.getStackInSlot(i);
+                    if (!stack.isEmpty()) {
+                        // 1. 땅에 아이템 엔티티 생성
+                        net.minecraft.world.entity.item.ItemEntity itemEntity = new net.minecraft.world.entity.item.ItemEntity(
+                                player.level(), player.getX(), player.getY(), player.getZ(), stack.copy());
+
+                        // 2. 드랍 목록에 추가 (이렇게 해야 다른 모드들과 호환됩니다)
+                        event.getDrops().add(itemEntity);
+
+                        // 3. 기존 슬롯은 비우기 (복사 방지)
+                        cap.inventory.setStackInSlot(i, ItemStack.EMPTY);
+                    }
+                }
+            });
         }
     }
 
@@ -75,6 +118,7 @@ public class ModAttributeHandler {
             com.example.examplemod.ModMessages.sendToPlayer(
                     new com.example.examplemod.Thirst.ThirstSyncPacket(thirst.getThirst()), player);
         });
+        syncGear(player);
     }
     @SubscribeEvent
     public static void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {

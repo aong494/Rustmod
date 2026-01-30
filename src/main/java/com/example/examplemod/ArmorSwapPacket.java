@@ -54,11 +54,18 @@ public class ArmorSwapPacket {
                 int gearIdx = slotIdx - 4;
                 player.getCapability(PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
                     ItemStack oldGear = cap.inventory.getStackInSlot(gearIdx).copy();
+
+                    // 1. 서버 데이터 저장
                     cap.inventory.setStackInSlot(gearIdx, carried);
+
+                    // 2. 마우스 아이템 교체
                     player.containerMenu.setCarried(oldGear);
 
-                    // 커스텀 슬롯 데이터 동기화
-                    ModMessages.sendToPlayer(new SyncGearPacket(cap.inventory.serializeNBT()), player);
+                    // 3. [수정] NBT 대신 아이템 두 개를 직접 전달하여 동기화 (에러 해결 지점)
+                    ModMessages.sendToPlayer(new SyncGearPacket(
+                            cap.inventory.getStackInSlot(0),
+                            cap.inventory.getStackInSlot(1)
+                    ), player);
                 });
             }
 

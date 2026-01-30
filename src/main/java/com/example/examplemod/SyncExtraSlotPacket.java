@@ -17,7 +17,6 @@ public class SyncExtraSlotPacket {
         this.stack = stack;
     }
 
-    // 데이터를 바이트 단위로 읽기/쓰기
     public SyncExtraSlotPacket(FriendlyByteBuf buffer) {
         this.index = buffer.readInt();
         this.stack = buffer.readItem();
@@ -28,14 +27,25 @@ public class SyncExtraSlotPacket {
         buffer.writeItem(stack);
     }
 
-    // 서버에서 실행될 로직
     public boolean handle(Supplier<NetworkEvent.Context> supplier) {
         NetworkEvent.Context context = supplier.get();
         context.enqueueWork(() -> {
-            // [수정] 이제 이 코드는 클라이언트(내 컴퓨터 화면)에서 실행됩니다.
-            net.minecraft.client.Minecraft.getInstance().player.getCapability(PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
-                cap.inventory.setStackInSlot(index, stack);
-            });
+            ServerPlayer player = context.getSender();
+            if (player != null) {
+                player.getCapability(PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
+                    // 1. 서버 Capability에 아이템 저장
+                    cap.inventory.setStackInSlot(index, stack);
+                    // 2. 중요: 서버에서 들고 있는 아이템 상태 강제 동기화
+                    player.containerMenu.setCarried(ItemStack.EMPTY);
+                    player.containerMenu.setRemoteCarried(ItemStack.EMPTY);
+                    ModMessages.sendToPlayer(new SyncGearPacket(
+                            cap.inventory.getStackInSlot(0),
+                            cap.inventory.getStackInSlot(1)
+                    ), player);
+
+                    player.containerMenu.broadcastChanges();
+                });
+            }
         });
         return true;
     }

@@ -1,5 +1,9 @@
 package com.example.examplemod.gui;
 
+import com.example.examplemod.ModMessages;
+import com.example.examplemod.SyncResistancePacket;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -78,13 +82,69 @@ public class InventoryEventHandler {
             for (int i = 33; i <= 35; i++) inv.setItem(i, ItemStack.EMPTY);
         }
     }
+    @SubscribeEvent
+    public static void onInventoryUpdate(TickEvent.PlayerTickEvent event) {
+        if (event.side.isServer() && event.phase == TickEvent.Phase.END) {
+            if (event.player instanceof ServerPlayer serverPlayer) {
+                if (serverPlayer.tickCount % 20 == 0) {
+                    int insul = calculateInsulation(serverPlayer);
+                    int rad = calculateRadiation(serverPlayer);
+                    ModMessages.sendToPlayer(new SyncResistancePacket(insul, rad), serverPlayer);
+                }
+            }
+        }
+    }
+    private static int calculateInsulation(Player player) {
+        int totalLevel = 0;
+        for (ItemStack armor : player.getArmorSlots()) {
+            if (armor.isEmpty() || !armor.hasTag()) continue;
+
+            if (armor.getTag().contains("PublicBukkitValues")) {
+                net.minecraft.nbt.CompoundTag bukkitTag = armor.getTag().getCompound("PublicBukkitValues");
+
+                if (bukkitTag.contains("rust:insulation")) {
+                    // 저장된 데이터가 정수(Int)인지 실수(Double)인지 모르므로 tagType을 확인하거나 강제 변환합니다.
+                    // NBT에서 숫자는 NumberTag 계열이므로 getDouble로 읽고 int로 캐스팅하는 것이 가장 안전합니다.
+                    totalLevel += (int) bukkitTag.getDouble("rust:insulation");
+
+                    // 만약 여전히 0이라면 아래 줄을 대신 써보세요. (정수형일 경우)
+                    // totalLevel += bukkitTag.getInt("rust:insulation");
+                }
+            }
+        }
+        return totalLevel;
+    }
+
+    private static int calculateRadiation(Player player) {
+        int totalLevel = 0;
+        for (ItemStack armor : player.getArmorSlots()) {
+            if (armor.isEmpty() || !armor.hasTag()) continue;
+
+            if (armor.getTag().contains("PublicBukkitValues")) {
+                net.minecraft.nbt.CompoundTag bukkitTag = armor.getTag().getCompound("PublicBukkitValues");
+
+                // 플러그인에서 정의한 키 이름: "rust:radiation_protection"
+                if (bukkitTag.contains("rust:radiation_protection")) {
+                    // 데이터 타입이 Double일 가능성이 높으므로 getDouble 후 캐스팅
+                    double value = bukkitTag.getDouble("rust:radiation_protection");
+
+                    // 만약 getDouble로 0이 나온다면 정수형(Int)일 수 있으므로 다시 체크
+                    if (value == 0 && bukkitTag.contains("rust:radiation_protection", 3)) { // 3은 Int 타입 번호
+                        totalLevel += bukkitTag.getInt("rust:radiation_protection");
+                    } else {
+                        totalLevel += (int) value;
+                    }
+                }
+            }
+        }
+        return totalLevel;
+    }
 }
 // 2. [매우 중요] Capability 시스템 자체를 등록하는 클래스 (버스 타입이 MOD임)
 @Mod.EventBusSubscriber(modid = "examplemod", bus = Mod.EventBusSubscriber.Bus.MOD)
 class ModBusEvents {
     @SubscribeEvent
     public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
-        // 시스템에 PlayerGearCapability 클래스를 등록
         event.register(PlayerGearCapability.class);
     }
 }
