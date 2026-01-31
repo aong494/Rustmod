@@ -23,9 +23,7 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
-import static net.minecraft.world.level.block.state.properties.BlockStateProperties.FACING;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.core.Direction;
+import net.minecraft.world.item.context.BlockPlaceContext;
 
 public class BigDoorBlock extends BaseEntityBlock {
     // 1. 속성을 명확하게 정의
@@ -34,25 +32,38 @@ public class BigDoorBlock extends BaseEntityBlock {
 
     public BigDoorBlock(Properties properties) {
         super(properties);
-        // 2. 생성자에서 기본값 등록 (매우 중요)
+        // 2. 기본 상태에도 등록
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(OPEN, false));
     }
-
+    @Nullable
+    @Override
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        // 플레이어가 바라보는 방향의 반대(나를 마주보게)로 설정
+        return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+    }
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
 
-        // 마스터 블록을 기준으로 4x4 범위를 더미 블록으로 채움
+        Direction facing = state.getValue(FACING);
+        Direction right = facing.getClockWise();
+
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 4; x++) {
-                if (x == 0 && y == 0) continue; // 자기 자신 제외
+                if (x == 0 && y == 0) continue;
 
-                BlockPos dummyPos = pos.offset(x, y, 0); // 방향에 따라 offset 계산은 달라질 수 있음
-                level.setBlock(dummyPos, ModBlocks.DOOR_DUMMY.get().defaultBlockState(), 3);
+                BlockPos dummyPos = pos.relative(right, x).above(y);
 
-                // 더미 블록에게 마스터 블록의 위치를 알려줌
+                // 공기 블록 상태에서 바로 setValue를 호출하면 튕깁니다.
+                // 대신, 기본 상태(defaultBlockState)를 먼저 가져와서 값을 설정해야 합니다.
+                BlockState dummyState = ModBlocks.DOOR_DUMMY.get().defaultBlockState()
+                        .setValue(FACING, facing)
+                        .setValue(OPEN, false);
+
+                level.setBlock(dummyPos, dummyState, 3);
+
                 if (level.getBlockEntity(dummyPos) instanceof DoorDummyEntity dummyEntity) {
                     dummyEntity.setMasterPos(pos);
                 }
@@ -63,16 +74,18 @@ public class BigDoorBlock extends BaseEntityBlock {
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (!level.isClientSide) {
-            boolean newState = !state.getValue(OPEN); // 바뀔 상태 (true 또는 false)
+            boolean newState = !state.getValue(OPEN);
+            Direction facing = state.getValue(FACING);
+            Direction right = facing.getClockWise();
+
             level.setBlock(pos, state.setValue(OPEN, newState), 3);
-            // 2. 주변 더미 블록들 상태도 한꺼번에 변경
+
             for (int y = 0; y < 4; y++) {
                 for (int x = 0; x < 4; x++) {
                     if (x == 0 && y == 0) continue;
-                    BlockPos dummyPos = pos.offset(x, y, 0);
+                    BlockPos dummyPos = pos.relative(right, x).above(y);
                     BlockState dummyState = level.getBlockState(dummyPos);
 
-                    // 해당 위치가 더미 블록이라면 OPEN 상태를 마스터와 똑같이 맞춤
                     if (dummyState.is(ModBlocks.DOOR_DUMMY.get())) {
                         level.setBlock(dummyPos, dummyState.setValue(OPEN, newState), 3);
                     }
@@ -105,11 +118,13 @@ public class BigDoorBlock extends BaseEntityBlock {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
-            // 마스터 블록이 파괴될 때 4x4 범위의 더미 블록 제거
+            Direction facing = state.getValue(FACING);
+            Direction right = facing.getClockWise();
+
             for (int y = 0; y < 4; y++) {
                 for (int x = 0; x < 4; x++) {
                     if (x == 0 && y == 0) continue;
-                    BlockPos targetPos = pos.offset(x, y, 0);
+                    BlockPos targetPos = pos.relative(right, x).above(y);
                     if (level.getBlockState(targetPos).is(ModBlocks.DOOR_DUMMY.get())) {
                         level.removeBlock(targetPos, false);
                     }

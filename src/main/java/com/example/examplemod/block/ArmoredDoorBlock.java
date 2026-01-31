@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockSetType;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.BlockHitResult;
@@ -27,7 +28,7 @@ public class ArmoredDoorBlock extends DoorBlock {
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         state = state.cycle(OPEN);
-        boolean isOpen = state.getValue(OPEN);
+        boolean isOpen = state.getValue(BlockStateProperties.OPEN);
 
         level.setBlock(pos, state, 10);
         this.playCustomSound(level, pos, isOpen); // 우리 소리 재생

@@ -12,7 +12,7 @@ import net.minecraftforge.registries.RegistryObject;
 public class ModItems {
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, ExampleMod.MODID);
-    public static final RegistryObject<Item> BIG_DOOR_ITEM = ITEMS.register("big_door_item",
+    public static final RegistryObject<Item> BIG_DOOR_ITEM = ITEMS.register("big_door",
             () -> new BlockItem(ModBlocks.BIG_DOOR.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> DOOR_DUMMY_ITEM = ITEMS.register("door_dummy",

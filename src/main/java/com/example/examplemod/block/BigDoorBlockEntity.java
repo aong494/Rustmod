@@ -55,4 +55,11 @@ public class BigDoorBlockEntity extends BlockEntity implements GeoBlockEntity {
         // 좌표는 본인의 모델 방향(x, y, z)에 맞춰 조정이 필요할 수 있습니다.
         return new net.minecraft.world.phys.AABB(worldPosition).inflate(4.0, 4.0, 1.0);
     }
+    @Override
+    public void setChanged() {
+        super.setChanged();
+        if (this.level != null) {
+            this.level.sendBlockUpdated(this.worldPosition, this.getBlockState(), this.getBlockState(), 3);
+        }
+    }
 }
