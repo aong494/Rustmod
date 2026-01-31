@@ -1,0 +1,27 @@
+{
+  "big_door_begin_movement": {
+    "sounds": [ "examplemod:big_door_begin_movement" ]
+  },
+  "big_door_close": {
+    "sounds": [ "examplemod:big_door_close" ]
+  },
+  "big_door_movement": {
+    "sounds": [ "examplemod:big_door_movement" ]
+  },
+  "big_door_open_finish": {
+    "sounds": [ "examplemod:big_door_open_finish" ]
+  },
+  "armored_door_open": {
+    "subtitle": "subtitles.examplemod.armored_door_open",
+    "sounds": [
+      "examplemod:block/open"
+    ]
+  },
+  "armored_door_close": {
+    "subtitle": "subtitles.examplemod.armored_door_close",
+    "sounds": [
+      "examplemod:block/close1",
+      "examplemod:block/close2"
+    ]
+  }
+}

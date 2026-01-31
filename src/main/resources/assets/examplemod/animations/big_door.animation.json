@@ -1,31 +1,60 @@
 {
 	"format_version": "1.8.0",
 	"animations": {
-		"close": {
-			"loop": true
+		"closed": {
+			"loop": "hold_on_last_frame",
+			"animation_length": 1.7083,
+			"bones": {
+				"bone": {
+					"position": {
+						"0.0": {
+							"vector": [0, 62, 0]
+						},
+						"1.5": {
+							"vector": [0, 0, 0]
+						}
+					}
+				}
+			},
+			"sound_effects": {
+				"0.0": {
+					"effect": "big_door_begin_movement"
+				},
+				"0.0417": {
+					"effect": "big_door_movement"
+				},
+				"0.7917": {
+					"effect": "big_door_close"
+				}
+			}
 		},
 		"open": {
-			"animation_length": 0.5,
+			"loop": "hold_on_last_frame",
+			"animation_length": 1.5,
 			"bones": {
-				"Right": {
-					"rotation": {
+				"bone": {
+					"position": {
 						"0.0": {
 							"vector": [0, 0, 0]
 						},
-						"0.375": {
-							"vector": [0, 90, 0]
+						"1.5": {
+							"vector": [0, 62, 0]
 						}
+					},
+					"scale": {
+						"vector": [1, 1, 1]
 					}
+				}
+			},
+			"sound_effects": {
+				"0.0": {
+					"effect": "big_door_begin_movement"
 				},
-				"Left": {
-					"rotation": {
-						"0.0": {
-							"vector": [0, 0, 0]
-						},
-						"0.375": {
-							"vector": [0, -90, 0]
-						}
-					}
+				"0.0417": {
+					"effect": "big_door_movement"
+				},
+				"0.7917": {
+					"effect": "big_door_open_finish"
 				}
 			}
 		}

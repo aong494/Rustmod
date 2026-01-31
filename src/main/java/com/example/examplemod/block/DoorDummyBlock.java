@@ -8,6 +8,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -27,16 +28,27 @@ public class DoorDummyBlock extends Block implements EntityBlock {
 
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
-        // 더미를 클릭했을 때 마스터 블록(진짜 문)을 찾아 작동시킵니다.
         if (level.getBlockEntity(pos) instanceof DoorDummyEntity dummy) {
             BlockPos masterPos = dummy.getMasterPos();
             BlockState masterState = level.getBlockState(masterPos);
 
-            if (masterState.getBlock() instanceof BigDoorBlock) {
-                return masterState.use(level, player, hand, new BlockHitResult(hit.getLocation(), hit.getDirection(), masterPos, hit.isInside()));
+            if (masterState.getBlock() instanceof BigDoorBlock masterBlock) {
+                return masterBlock.use(masterState, level, masterPos, player, hand, hit);
             }
         }
         return InteractionResult.PASS;
+    }
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
+        if (!state.is(newState.getBlock())) {
+            if (level.getBlockEntity(pos) instanceof DoorDummyEntity dummy) {
+                BlockPos masterPos = dummy.getMasterPos();
+                if (level.getBlockState(masterPos).is(ModBlocks.BIG_DOOR.get())) {
+                    level.destroyBlock(masterPos, true); // 마스터를 부수면 마스터의 onRemove가 실행되어 나머지 더미도 다 부서짐
+                }
+            }
+            super.onRemove(state, level, pos, newState, isMoving);
+        }
     }
 
     @Nullable
@@ -49,7 +61,28 @@ public class DoorDummyBlock extends Block implements EntityBlock {
         return state.getValue(BlockStateProperties.OPEN) ? Shapes.empty() : Shapes.block();
     }
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        // BlockStateProperties.OPEN을 등록해줘야 에러가 나지 않습니다.
         builder.add(BlockStateProperties.OPEN);
+    }
+    @Override
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.INVISIBLE;
+    }
+
+    @Override
+    public VoxelShape getVisualShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        // 선택 박스(검은 테두리)도 안 보이게 하려면 empty() 사용
+        return Shapes.empty();
+    }
+
+    @Override
+    public float getShadeBrightness(BlockState state, BlockGetter level, BlockPos pos) {
+        // 빛이 통과하게 함
+        return 1.0F;
+    }
+
+    @Override
+    public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+        // 하늘 빛이 통과하게 함
+        return true;
     }
 }
