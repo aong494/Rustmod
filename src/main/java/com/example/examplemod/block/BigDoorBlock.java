@@ -1,7 +1,12 @@
 package com.example.examplemod.block;
 
+import com.example.examplemod.ExampleMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
@@ -37,11 +42,28 @@ public class BigDoorBlock extends BaseEntityBlock {
                 .setValue(FACING, Direction.NORTH)
                 .setValue(OPEN, false));
     }
-    @Nullable
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
-        // 플레이어가 바라보는 방향의 반대(나를 마주보게)로 설정
-        return this.defaultBlockState().setValue(FACING, context.getHorizontalDirection().getOpposite());
+        Level level = context.getLevel();
+        BlockPos startPos = context.getClickedPos();
+        Direction facing = context.getHorizontalDirection().getOpposite();
+        Direction right = facing.getClockWise();
+
+        // 4x4 공간이 모두 비어있는지 확인
+        for (int y = 0; y < 4; y++) {
+            for (int x = 0; x < 4; x++) {
+                BlockPos targetPos = startPos.relative(right, x).above(y);
+                BlockState targetState = level.getBlockState(targetPos);
+                // 시작 지점(본인)은 제외하고 체크
+                if (x == 0 && y == 0) continue;
+                // 공기나 교체 가능한 블록(물, 풀 등)이 아니면 설치 불가
+                if (!targetState.canBeReplaced(context)) {
+                    return null; // null을 반환하면 설치가 취소됩니다.
+                }
+            }
+        }
+
+        return this.defaultBlockState().setValue(FACING, facing).setValue(OPEN, false);
     }
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
@@ -69,6 +91,7 @@ public class BigDoorBlock extends BaseEntityBlock {
                 }
             }
         }
+        level.sendBlockUpdated(pos, state, state, 3);
     }
 
     @Override
@@ -132,5 +155,14 @@ public class BigDoorBlock extends BaseEntityBlock {
             }
             super.onRemove(state, level, pos, newState, isMoving);
         }
+    }
+    @Override
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (!level.isClientSide) {
+            level.playSound(null, pos,
+                    SoundEvent.createVariableRangeEvent(new ResourceLocation(ExampleMod.MODID, "custom_door_break")),
+                    SoundSource.BLOCKS, 1.0F, 1.0F);
+        }
+        super.playerWillDestroy(level, pos, state, player);
     }
 }

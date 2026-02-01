@@ -1,7 +1,10 @@
 package com.example.examplemod.block;
 
+import com.example.examplemod.ExampleMod;
 import com.example.examplemod.sound.ModSounds;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -66,5 +69,15 @@ public class ArmoredDoorBlock extends DoorBlock {
         level.playSound(null, pos,
                 open ? ModSounds.ARMORED_DOOR_OPEN.get() : ModSounds.ARMORED_DOOR_CLOSE.get(),
                 SoundSource.BLOCKS, 1.0F, 1.0F);
+    }
+    @Override
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (!level.isClientSide) {
+            // 커스텀 사운드 재생 (더미가 부서질 때 나는 소리)
+            level.playSound(null, pos,
+                    SoundEvent.createVariableRangeEvent(new ResourceLocation(ExampleMod.MODID, "custom_door_break")),
+                    SoundSource.BLOCKS, 1.0F, 1.0F);
+        }
+        super.playerWillDestroy(level, pos, state, player);
     }
 }

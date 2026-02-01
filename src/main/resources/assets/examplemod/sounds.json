@@ -23,5 +23,12 @@
       "examplemod:block/close1",
       "examplemod:block/close2"
     ]
+  },
+  "custom_door_break": {
+    "category": "block",
+    "sounds": [
+      "examplemod:block/door_impact_metal1",
+      "examplemod:block/door_impact_metal2"
+    ]
   }
 }

@@ -7,6 +7,7 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraft.client.Minecraft;
@@ -27,6 +28,60 @@ public class ModHudHandler {
     private static final ResourceLocation COMPASS_BAR = ResourceLocation.tryParse("examplemod:textures/gui/compass_bar.png");
     private static final ResourceLocation SLOT_NORMAL = ResourceLocation.tryParse("examplemod:textures/gui/slot_normal.png");
     private static final ResourceLocation SLOT_SELECTED = ResourceLocation.tryParse("examplemod:textures/gui/slot_selected.png");
+    @SubscribeEvent
+    public static void onRenderGuiPre(RenderGuiOverlayEvent.Pre event) {
+        String path = event.getOverlay().id().getPath();
+
+        // 1. 순정 상태창 및 경험치 바 제거
+        if (path.equals("player_health") || path.equals("food_level") ||
+                path.equals("experience_bar") || path.equals("armor_level") || path.equals("air_level")) {
+            event.setCanceled(true);
+            return;
+        }
+
+        // 2. [핵심] 핫바 좌표 날리기 (인벤토리가 닫혀있을 때만)
+        if (path.equals("hotbar")) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen == null) {
+                event.getGuiGraphics().pose().pushPose();
+                event.getGuiGraphics().pose().translate(0, 5000, 0); // 화면 아래로 멀리 날림
+            }
+        }
+    }
+
+    @SubscribeEvent
+    public static void onRenderGuiPost(RenderGuiOverlayEvent.Post event) {
+        String path = event.getOverlay().id().getPath();
+
+        // 3. 밀어냈던 핫바 좌표 복구
+        if (path.equals("hotbar")) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.screen == null) {
+                event.getGuiGraphics().pose().popPose();
+            }
+        }
+
+        // 4. [핵심] 중복 렌더링 방지: 오직 hotbar 레이어 직후에만 커스텀 HUD를 그림
+        if (!path.equals("hotbar")) return;
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.player == null || mc.options.hideGui) return;
+
+        GuiGraphics guiGraphics = event.getGuiGraphics();
+        int screenWidth = event.getWindow().getGuiScaledWidth();
+        int screenHeight = event.getWindow().getGuiScaledHeight();
+
+        // --- 렌더링 시작 ---
+        renderCompass(guiGraphics, mc, (screenWidth / 2) - 100, 0, 200, 15);
+        renderRustHotbar(guiGraphics, mc, screenWidth, screenHeight);
+
+        int barX = screenWidth - 130;
+        int barYStart = screenHeight - 50;
+        renderRustBar(guiGraphics, mc, HUD_BG, HP_ICON, barX, barYStart, mc.player.getHealth(), 100.0f, 0xFF5DB31F);
+        renderRustBar(guiGraphics, mc, HUD_BG, THIRST_ICON, barX, barYStart + 16, ClientThirstData.get(), 250.0f, 0xFF1DA1F2);
+        renderRustBar(guiGraphics, mc, HUD_BG, HUNGER_ICON, barX, barYStart + 32, com.example.examplemod.Hunger.ClientHungerData.get(), 500.0f, 0xFFD87820);
+    }
+
     @SubscribeEvent
     public static void onRenderGui(RenderGuiOverlayEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
@@ -143,21 +198,6 @@ public class ModHudHandler {
         guiGraphics.pose().popPose();
 
         RenderSystem.disableBlend();
-    }
-    @SubscribeEvent
-    public static void onRenderGuiPre(RenderGuiOverlayEvent.Pre event) {
-        String path = event.getOverlay().id().getPath();
-
-        // 차단할 대상 (마인크래프트 순정 UI만 정확히 집어서 차단)
-        if (path.equals("player_health") ||
-                path.equals("food_level") ||
-                path.equals("hotbar") ||
-                path.equals("experience_bar") ||
-                path.equals("armor_level") ||
-                path.equals("air_level")) {
-            event.setCanceled(true);
-        }
-        // 여기에 해당하지 않는 보이스챗 등 타 모드의 UI는 통과됩니다.
     }
     @SubscribeEvent
     public static void onPlayerTick(net.minecraftforge.event.TickEvent.PlayerTickEvent event) {
@@ -285,5 +325,13 @@ public class ModHudHandler {
         }
 
         RenderSystem.disableBlend();
+    }
+    @SubscribeEvent
+    public static void onClientTick(TickEvent.PlayerTickEvent event) {
+        if (event.side.isClient() && event.phase == TickEvent.Phase.END) {
+            if (event.player != null && event.player.getInventory().selected > 5) {
+                event.player.getInventory().selected = 0;
+            }
+        }
     }
 }

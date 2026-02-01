@@ -32,45 +32,51 @@ public class InventoryEventHandler {
     }
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END && !event.player.level().isClientSide) {
+        // 서버 사이드에서만 동작, Phase는 START가 안정적입니다.
+        if (event.phase == TickEvent.Phase.START && !event.player.level().isClientSide) {
             Player player = event.player;
+
+            // [중요 1] 인벤토리나 창(GUI)을 열고 있을 때는 로직 중단!
+            // 서버가 아이템을 계속 만지면 클라이언트에서 툴팁(Lore) 렌더링이 취소됩니다.
+            if (player.containerMenu != player.inventoryMenu) return;
+
+            // [중요 2] 매 틱(0.05초)마다 실행하면 패킷 과부하가 걸립니다. 10틱(0.5초) 주기로 완화.
+            if (player.tickCount % 10 != 0) return;
+
             Inventory inv = player.getInventory();
+            boolean changed = false;
 
-            // 1. 숨겨진 핫바 슬롯 (6, 7, 8번) 감시
-            for (int i = 6; i <= 8; i++) {
-                ItemStack stackInHiddenHotbar = inv.getItem(i);
-
-                if (!stackInHiddenHotbar.isEmpty()) {
-                    // 2. 메인 인벤토리(9~32번)의 빈 공간 찾기
-                    int emptySlot = -1;
-                    for (int j = 9; j <= 32; j++) {
-                        if (inv.getItem(j).isEmpty()) {
-                            emptySlot = j;
-                            break;
-                        }
-                    }
-
-                    if (emptySlot != -1) {
-                        // 빈칸이 있다면 거기로 이동
-                        inv.setItem(emptySlot, stackInHiddenHotbar.copy());
-                        inv.setItem(i, ItemStack.EMPTY);
-                    } else {
-                        // 인벤토리마저 꽉 찼다면 발밑으로 뱉기
-                        player.drop(stackInHiddenHotbar.copy(), true, false);
-                        inv.setItem(i, ItemStack.EMPTY);
-                    }
-                }
-            }
-
-            // 3. 숨겨진 메인 인벤토리 끝부분 (33~35번)은 항상 뱉기
-            for (int i = 33; i <= 35; i++) {
+            // 6, 7, 8번 슬롯 및 33, 34, 35번 슬롯 검사
+            int[] restrictedSlots = {6, 7, 8, 33, 34, 35};
+            for (int i : restrictedSlots) {
                 ItemStack stack = inv.getItem(i);
                 if (!stack.isEmpty()) {
-                    player.drop(stack.copy(), true, false);
-                    inv.setItem(i, ItemStack.EMPTY);
+                    int emptySlot = findEmptyMainSlot(inv);
+                    if (emptySlot != -1) {
+                        inv.setItem(emptySlot, stack.copy());
+                        inv.setItem(i, ItemStack.EMPTY);
+                        changed = true;
+                    } else {
+                        player.drop(stack.copy(), true, false);
+                        inv.setItem(i, ItemStack.EMPTY);
+                        changed = true;
+                    }
                 }
             }
+
+            // 아이템이 이동되었다면 클라이언트에 변경 사항 전송
+            if (changed && player instanceof ServerPlayer serverPlayer) {
+                serverPlayer.containerMenu.broadcastChanges();
+            }
         }
+    }
+
+    // 메인 인벤토리(9~32번)에서 빈칸을 찾는 헬퍼 메서드
+    private static int findEmptyMainSlot(Inventory inv) {
+        for (int i = 9; i <= 32; i++) {
+            if (inv.getItem(i).isEmpty()) return i;
+        }
+        return -1;
     }
 
     @SubscribeEvent
@@ -103,12 +109,7 @@ public class InventoryEventHandler {
                 net.minecraft.nbt.CompoundTag bukkitTag = armor.getTag().getCompound("PublicBukkitValues");
 
                 if (bukkitTag.contains("rust:insulation")) {
-                    // 저장된 데이터가 정수(Int)인지 실수(Double)인지 모르므로 tagType을 확인하거나 강제 변환합니다.
-                    // NBT에서 숫자는 NumberTag 계열이므로 getDouble로 읽고 int로 캐스팅하는 것이 가장 안전합니다.
                     totalLevel += (int) bukkitTag.getDouble("rust:insulation");
-
-                    // 만약 여전히 0이라면 아래 줄을 대신 써보세요. (정수형일 경우)
-                    // totalLevel += bukkitTag.getInt("rust:insulation");
                 }
             }
         }
@@ -138,6 +139,16 @@ public class InventoryEventHandler {
             }
         }
         return totalLevel;
+    }
+    @SubscribeEvent
+    public static void onTooltip(net.minecraftforge.event.entity.player.ItemTooltipEvent event) {
+        ItemStack stack = event.getItemStack();
+        if (!stack.isEmpty() && stack.hasTag()) {
+            // NBT가 있는지 디버깅용 텍스트 추가
+            if (stack.getTag().contains("PublicBukkitValues")) {
+                event.getToolTip().add(net.minecraft.network.chat.Component.literal("§7[보호 수치 포함됨]"));
+            }
+        }
     }
 }
 // 2. [매우 중요] Capability 시스템 자체를 등록하는 클래스 (버스 타입이 MOD임)

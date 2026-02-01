@@ -57,6 +57,9 @@
 					"effect": "big_door_open_finish"
 				}
 			}
+		},
+		"idle": {
+			"loop": true
 		}
 	},
 	"geckolib_format_version": 2

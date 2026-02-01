@@ -1,7 +1,11 @@
 package com.example.examplemod.block;
 
+import com.example.examplemod.ExampleMod;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -91,5 +95,21 @@ public class DoorDummyBlock extends Block implements EntityBlock {
     public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
         // 하늘 빛이 통과하게 함
         return true;
+    }
+    @Override
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (!level.isClientSide) {
+            // 커스텀 사운드 재생 (더미가 부서질 때 나는 소리)
+            level.playSound(null, pos,
+                    SoundEvent.createVariableRangeEvent(new ResourceLocation(ExampleMod.MODID, "custom_door_break")),
+                    SoundSource.BLOCKS, 1.0F, 1.0F);
+        }
+        super.playerWillDestroy(level, pos, state, player);
+    }
+
+    private void handleMasterDamage(Level level, BlockPos masterPos, Player player) {
+        // PlankHealthManager.damageBlock(masterPos, damage) 같은 형태로 호출
+        // 현재 모드에 구현된 체력 관리 매니저를 연결하세요.
+        System.out.println("Master Door at " + masterPos + " took damage via Dummy!");
     }
 }
