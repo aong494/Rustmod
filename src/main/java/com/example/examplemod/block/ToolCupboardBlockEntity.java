@@ -2,6 +2,7 @@ package com.example.examplemod.block;
 
 import com.example.examplemod.block.ModBlockEntities;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Container;
@@ -9,9 +10,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
-
-import com.example.examplemod.block.ModBlockEntities;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -22,13 +20,51 @@ import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.WorldlyContainer;
+import org.jetbrains.annotations.Nullable;
 
-public class ToolCupboardBlockEntity extends RandomizableContainerBlockEntity {
-    // 27칸 인벤토리 생성
-    private NonNullList<ItemStack> items = NonNullList.withSize(27, ItemStack.EMPTY);
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class ToolCupboardBlockEntity extends RandomizableContainerBlockEntity implements WorldlyContainer {
+
+    public static final Map<BlockPos, ToolCupboardBlockEntity> ACTIVE_CUPBOARDS = new ConcurrentHashMap<>();
+
+    public NonNullList<ItemStack> items = NonNullList.withSize(27, ItemStack.EMPTY);
 
     public ToolCupboardBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.TOOL_CUPBOARD_BE.get(), pos, state);
+    }
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (this.worldPosition != null) {
+            ACTIVE_CUPBOARDS.put(this.worldPosition.immutable(), this);
+        }
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        if (this.worldPosition != null) {
+            ACTIVE_CUPBOARDS.remove(this.worldPosition);
+        }
+    }
+    @Override
+    public int[] getSlotsForFace(Direction side) {
+        int[] result = new int[getContainerSize()];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = i;
+        }
+        return result;
+    }
+    @Override
+    public boolean canPlaceItemThroughFace(int slot, ItemStack stack, @Nullable Direction side) {
+        return true; // 외부(호퍼/플러그인)에서 아이템을 넣을 수 있게 허용
+    }
+    @Override
+    public boolean canTakeItemThroughFace(int slot, ItemStack stack, Direction side) {
+        return true;
     }
 
     @Override
@@ -52,7 +88,6 @@ public class ToolCupboardBlockEntity extends RandomizableContainerBlockEntity {
 
     @Override
     protected AbstractContainerMenu createMenu(int id, Inventory player) {
-        // 기존 커스텀 상자와 동일한 9x3(27칸) 레이아웃을 사용합니다.
         return ChestMenu.threeRows(id, player, this);
     }
 
@@ -77,5 +112,9 @@ public class ToolCupboardBlockEntity extends RandomizableContainerBlockEntity {
         if (!this.trySaveLootTable(nbt)) {
             ContainerHelper.saveAllItems(nbt, this.items);
         }
+    }
+    @Override
+    public Component getDisplayName() {
+        return Component.literal("도구함");
     }
 }

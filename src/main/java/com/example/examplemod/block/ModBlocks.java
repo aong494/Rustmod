@@ -41,10 +41,8 @@ public class ModBlocks {
     public static final RegistryObject<Block> TOOL_CUPBOARD = BLOCKS.register("tool_cupboard",
             () -> new ToolCupboardBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.WOOD)
-                    .strength(2.5F, 3.0F)
-                    .sound(SoundType.WOOD)
+                    .strength(2.0f)
                     .noOcclusion()
-                    .ignitedByLava()
-                    .requiresCorrectToolForDrops()
+                    .dynamicShape()
             ));
 }

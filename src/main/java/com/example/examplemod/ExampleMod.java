@@ -28,6 +28,7 @@ import net.minecraft.world.inventory.MenuType;
 import software.bernie.geckolib.GeckoLib;
 import com.example.examplemod.block.ModBlocks;
 import com.example.examplemod.block.ModBlockEntities;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(ExampleMod.MODID)
@@ -125,8 +126,16 @@ public class    ExampleMod
         }
         @SubscribeEvent
         public static void registerRenderers(final net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
+            // 1. 기존 문 렌더러 등록 (유지)
             event.registerBlockEntityRenderer(ModBlockEntities.BIG_DOOR.get(),
                     context -> new com.example.examplemod.block.renderer.BigDoorRenderer(context));
+
+            // 2. [추가] 덫상자 렌더러 가로채기 등록
+            // TrappedChestBlockEntity가 렌더링될 때 우리가 만든 커스텀 렌더러를 사용하게 합니다.
+            event.registerBlockEntityRenderer(net.minecraft.world.level.block.entity.BlockEntityType.TRAPPED_CHEST,
+                    context -> new com.example.examplemod.block.renderer.ToolCupboardRenderer(context));
+
+            LOGGER.info("RUST_STYLE: Custom ToolCupboard Renderer registered to Trapped Chest.");
         }
     }
 }
