@@ -50,8 +50,6 @@ public class RustChestMenu extends AbstractContainerMenu {
             });
         }
 
-// 5. [삭제된 부분] 보조손 슬롯(40번)을 추가하던 코드를 지웁니다.
-
 // 6. 커스텀 슬롯 2개 추가 (이제 Index 67, 68이 됩니다)
         playerInventory.player.getCapability(PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
             this.addSlot(new CustomGearSlot(cap.inventory, 0, 0, 0)); // Index 67

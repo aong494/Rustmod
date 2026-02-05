@@ -1,6 +1,7 @@
 package com.example.examplemod.gui;
 
 import com.example.examplemod.ArmorSwapPacket;
+import com.example.examplemod.ClientStats;
 import com.example.examplemod.ModMessages;
 import com.example.examplemod.SyncExtraSlotPacket; // 패킷 클래스 이름 확인
 import com.example.examplemod.capability.PlayerGearCapability;
@@ -21,10 +22,17 @@ import java.lang.reflect.Field;
 public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
     // 텍스처 경로는 알려주신 대로 chest_rust.png를 사용합니다.
     private static final ResourceLocation GUI_TEXTURE = ResourceLocation.tryParse("examplemod:textures/gui/chest_rust.png");
-
+    private static final ResourceLocation TC_GUI_TEXTURE =
+            ResourceLocation.tryParse("examplemod:textures/gui/tc_inventory.png");
+    private static final ResourceLocation STATS_BG = ResourceLocation.tryParse("examplemod:textures/gui/icons/stats_bg.png");
+    private static final ResourceLocation INSUL_ICON = ResourceLocation.tryParse("examplemod:textures/gui/icons/insulation_icon.png");
+    private static final ResourceLocation RAD_ICON = ResourceLocation.tryParse("examplemod:textures/gui/icons/radiation_icon.png");
     // 인벤토리 화면과 비율을 맞추기 위해 너비를 확장 (예: 512 -> 800 등으로 이미지에 맞춰 조절 필요)
     private static final int TEXTURE_WIDTH = 512;
     private static final int TEXTURE_HEIGHT = 396;
+
+    private double mouseX;
+    private double mouseY;
 
     private static final Field slotXField = ObfuscationReflectionHelper.findField(Slot.class, "f_40220_");
     private static final Field slotYField = ObfuscationReflectionHelper.findField(Slot.class, "f_40221_");
@@ -124,7 +132,7 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
                 renderVirtualSlot(guiGraphics, cap.inventory.getStackInSlot(1), extraX1, extraY1, mouseX, mouseY);
             });
         }
-
+        renderStats(guiGraphics);
         renderMouseItem(guiGraphics, mouseX, mouseY);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
@@ -142,30 +150,57 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
             RenderSystem.enableDepthTest();
         }
     }
-
+    private void renderStats(GuiGraphics g) {
+        int statsX = this.leftPos + this.imageWidth - 428;
+        int statsYStart = this.topPos + 285;
+        drawStatBar(g, statsX, statsYStart, String.valueOf(ClientStats.insulation), INSUL_ICON);
+        drawStatBar(g, statsX, statsYStart + 20, String.valueOf(ClientStats.radiation), RAD_ICON);
+    }
+    private void drawStatBar(GuiGraphics g, int x, int y, String value, ResourceLocation icon) {
+        RenderSystem.enableBlend();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 0.9f);
+        g.blit(STATS_BG, x, y, 0, 0, 80, 16, 80, 16);
+        g.drawString(this.font, value, x + 55, y + 4, 0xFFFFFFFF, true);
+        g.blit(icon, x + 65, y + 2, 0, 0, 12, 12, 12, 12);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+    }
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        // 1. 갑옷 4칸 클릭 판정
+    public boolean mouseClicked(double pMouseX, double pMouseY, int pButton) {
+        // 추가 슬롯 0번 클릭
+        if (isHovering(extraX0, extraY0, 18, 18, pMouseX, pMouseY)) {
+            handleCustomSlotClick(0);
+            return true;
+        }
+        // 추가 슬롯 1번 클릭
+        if (isHovering(extraX1, extraY1, 18, 18, pMouseX, pMouseY)) {
+            handleCustomSlotClick(1);
+            return true;
+        }
+        // 갑옷 4칸 클릭 (ArmorSwapPacket 0~3번 호출)
         for (int i = 0; i < 4; i++) {
-            if (isHovering(armorStartX + (i * 28) + 3, armorStartY + 3, 18, 18, mouseX, mouseY)) {
+            if (isHovering(armorStartX + (i * 28) + 3, armorStartY + 3, 18, 18, pMouseX, pMouseY)) {
                 ModMessages.sendToServer(new ArmorSwapPacket(3 - i));
-                return true; // 여기서 true를 반환하면 클릭 처리가 완료됨
+                return true;
             }
         }
-        // 2. 커스텀 슬롯 0번 (인덱스 4)
-        if (isHovering(extraX0, extraY0, 18, 18, mouseX, mouseY)) {
-            ModMessages.sendToServer(new ArmorSwapPacket(4));
-        // [중요] updateClientExtraSlots() 삭제! 서버가 보내주는 패킷을 기다려야 합니다.
-            return true;
+        return super.mouseClicked(pMouseX, pMouseY, pButton);
+    }
+    private void handleCustomSlotClick(int index) {
+        ItemStack carried = this.menu.getCarried();
+        if (!carried.isEmpty() && !PlayerGearCapability.isItemValid(index, carried)) return;
+
+        ModMessages.sendToServer(new ArmorSwapPacket(index + 4));
+
+        // 클라이언트 시뮬레이션
+        if (index == 0) {
+            ItemStack old = this.extraSlot0.copy();
+            this.extraSlot0 = carried.copy();
+            this.menu.setCarried(old);
+        } else {
+            ItemStack old = this.extraSlot1.copy();
+            this.extraSlot1 = carried.copy();
+            this.menu.setCarried(old);
         }
-        // 3. 커스텀 슬롯 1번 (인덱스 5)
-        if (isHovering(extraX1, extraY1, 18, 18, mouseX, mouseY)) {
-            ModMessages.sendToServer(new ArmorSwapPacket(5));
-            // [중요] updateClientExtraSlots() 삭제!
-            return true;
-        }
-        // 그 외의 영역(상자 안 등) 클릭은 원래대로 처리
-        return super.mouseClicked(mouseX, mouseY, button);
     }
     // --- 헬퍼 메서드들 (기존 로직 유지) ---
     private void renderVanillaSlots(GuiGraphics g, int mx, int my) {
@@ -216,16 +251,44 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
         RenderSystem.enableBlend();
         int guiX = (this.width - this.imageWidth) / 2;
         int guiY = (this.height - this.imageHeight) / 2;
-        guiGraphics.blit(GUI_TEXTURE, guiX, guiY, 0, 0, this.imageWidth, this.imageHeight, TEXTURE_WIDTH, TEXTURE_HEIGHT);
-        InventoryScreen.renderEntityInInventoryFollowsMouse(guiGraphics, guiX + 60, guiY + 300, 70, (float)(guiX + 80) - mouseX, (float)(guiY + 140) - mouseY, this.minecraft.player);
+
+        // 1. 어떤 텍스처를 쓸지 결정
+        ResourceLocation textureToRender = GUI_TEXTURE;
+        String titleStr = this.title.getString();
+
+        if (titleStr.contains("도구함") || titleStr.contains("Tool Cupboard")) {
+            textureToRender = TC_GUI_TEXTURE;
+        }
+
+        // [수정] GUI_TEXTURE 대신 결정된 textureToRender를 사용합니다.
+        guiGraphics.blit(textureToRender, guiX, guiY, 0, 0, this.imageWidth, this.imageHeight, TEXTURE_WIDTH, TEXTURE_HEIGHT);
+
+        // 2. 캐릭터 렌더링 (도구함 UI 디자인에 맞춰 위치 조정이 필요할 수 있습니다)
+        // 현재 y 좌표가 300으로 설정되어 있는데, 일반적인 GUI에서는 화면 밖으로 나갈 수 있으니 주의하세요!
+        InventoryScreen.renderEntityInInventoryFollowsMouse(
+                guiGraphics,
+                guiX + 60, guiY + 300, // y값을 UI의 캐릭터 칸 위치에 맞춰 조정 (예: 100)
+                70,
+                (float)(guiX + 60) - mouseX,
+                (float)(guiY + 50) - mouseY,
+                this.minecraft.player
+        );
+
         RenderSystem.disableBlend();
     }
-
     @Override
     protected boolean isHovering(int pX, int pY, int pWidth, int pHeight, double pMouseX, double pMouseY) {
         if (pWidth <= 18 && pHeight <= 18) return super.isHovering(pX - 3, pY - 3, 24, 24, pMouseX, pMouseY);
         return super.isHovering(pX, pY, pWidth, pHeight, pMouseX, pMouseY);
     }
 
-    @Override protected void renderLabels(GuiGraphics g, int x, int y) {}
+    @Override
+    protected void renderLabels(GuiGraphics g, int x, int y) {
+        // 제목이 도구함일 때만 추가 텍스트 표시
+        if (this.title.getString().contains("도구함")) {
+            // 위치(x, y)는 GUI 이미지 내의 빈 공간 좌표에 맞춰 조절하세요.
+            g.drawString(this.font, "§720분 유지보수 필요 자원", 350, 185, 0xFFFFFFFF, true);
+            g.drawString(this.font, "§a보호 중", 350, 280, 0xFF5DB31F, true);
+        }
+    }
 }

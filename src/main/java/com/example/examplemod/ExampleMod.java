@@ -50,6 +50,7 @@ public class    ExampleMod
                         output.accept(ModItems.BIG_DOOR_ITEM.get());
                         output.accept(ModItems.DOOR_DUMMY_ITEM.get());
                         output.accept(ModItems.ARMORED_DOOR_ITEM.get());
+                        output.accept(ModItems.TOOL_CUPBOARD_ITEM.get());
                     }).build());
 
     public ExampleMod(FMLJavaModLoadingContext context) {

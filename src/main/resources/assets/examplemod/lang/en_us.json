@@ -3,5 +3,7 @@
   "block.examplemod.door_dummy": "Door Dummy",
   "block.examplemod.armored_door": "Armored Door",
   "item.examplemod.armored_door": "Armored Door",
+  "block.examplemod.tool_cupboard": "Tool Cupboard",
+  "item.examplemod.tool_cupboard": "Tool Cupboard",
   "creativetab.example_tab": "Rust"
 }

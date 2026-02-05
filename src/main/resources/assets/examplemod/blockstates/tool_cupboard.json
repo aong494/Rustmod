@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north,half=lower": { "model": "examplemod:block/tool_cupboard" },
+    "facing=south,half=lower": { "model": "examplemod:block/tool_cupboard", "y": 180 },
+    "facing=west,half=lower":  { "model": "examplemod:block/tool_cupboard", "y": 270 },
+    "facing=east,half=lower":  { "model": "examplemod:block/tool_cupboard", "y": 90 },
+
+    "facing=north,half=upper": { "model": "examplemod:block/tool_cupboard_top_empty" },
+    "facing=south,half=upper": { "model": "examplemod:block/tool_cupboard_top_empty" },
+    "facing=west,half=upper":  { "model": "examplemod:block/tool_cupboard_top_empty" },
+    "facing=east,half=upper":  { "model": "examplemod:block/tool_cupboard_top_empty" }
+  },
+    "half=lower": {
+      "model": "examplemod:block/tool_cupboard"
+    },
+    "half=upper": {
+      "model": "examplemod:block/tool_cupboard_top_empty"
+    }
+  }

@@ -11,6 +11,7 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
+import net.minecraft.tags.BlockTags;
 
 public class ModBlocks {
     public static final DeferredRegister<Block> BLOCKS = DeferredRegister.create(ForgeRegistries.BLOCKS, ExampleMod.MODID);
@@ -37,4 +38,13 @@ public class ModBlocks {
                     .strength(5.0f, 600.0f)
                     .requiresCorrectToolForDrops()
                     .noOcclusion()));
+    public static final RegistryObject<Block> TOOL_CUPBOARD = BLOCKS.register("tool_cupboard",
+            () -> new ToolCupboardBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.WOOD)
+                    .strength(2.5F, 3.0F)
+                    .sound(SoundType.WOOD)
+                    .noOcclusion()
+                    .ignitedByLava()
+                    .requiresCorrectToolForDrops()
+            ));
 }

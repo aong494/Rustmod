@@ -257,11 +257,8 @@
                 if (slot.isActive() && slot.x > -1000) {
                     int sx = this.leftPos + slot.x;
                     int sy = this.topPos + slot.y;
-
-                    // 아이템 본체만 그리기 (장식 제외)
                     if (!slot.getItem().isEmpty()) {
                         guiGraphics.renderItem(slot.getItem(), sx, sy);
-                        // 우리가 만든 커스텀 장식(개수, 내구도) 그리기
                         renderSlotDecorations(guiGraphics, slot.getItem(), sx, sy);
                     }
                 }
@@ -317,17 +314,15 @@
             // [6] 마우스가 들고 있는 아이템(Carried Item) 그리기
             if (!this.menu.getCarried().isEmpty()) {
                 guiGraphics.pose().pushPose();
-                // 마우스 아이템은 가장 앞 레이어(Z-index 200 이상)에 그려야 합니다.
-                guiGraphics.pose().translate(0, 0, 250);
-                // 아이템 본체 그리기 (마우스 위치 기준 -8픽셀 하여 중앙 맞춤)
+                guiGraphics.pose().translate(0, 0, 250); // 아이템보다 위에
                 guiGraphics.renderItem(this.menu.getCarried(), mouseX - 8, mouseY - 8);
-                // 마우스 아이템의 개수와 내구도도 Rust 스타일로 적용!
                 renderSlotDecorations(guiGraphics, this.menu.getCarried(), mouseX - 8, mouseY - 8);
                 guiGraphics.pose().popPose();
             }
 
             // [7] 툴팁 그리기 (가장 마지막)
-            this.renderTooltip(guiGraphics, mouseX, mouseY);
+            this.hoveredSlot = findHoveredSlot();
+            super.renderTooltip(guiGraphics, mouseX, mouseY);
         }
         private void renderSlotDecorations(GuiGraphics guiGraphics, ItemStack stack, int x, int y) {
             if (stack.isEmpty()) return;

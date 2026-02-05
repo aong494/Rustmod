@@ -20,6 +20,8 @@ public class ModItems {
 
     public static final RegistryObject<Item> ARMORED_DOOR_ITEM = ITEMS.register("armored_door",
             () -> new BlockItem(ModBlocks.ARMORED_DOOR.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TOOL_CUPBOARD_ITEM = ITEMS.register("tool_cupboard",
+            () -> new BlockItem(ModBlocks.TOOL_CUPBOARD.get(), new Item.Properties()));
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

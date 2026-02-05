@@ -5,6 +5,7 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.event.TickEvent;
@@ -12,7 +13,6 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraft.client.Minecraft;
 import com.mojang.blaze3d.vertex.*;
-
 
 @Mod.EventBusSubscriber(modid = "examplemod", bus = Mod.EventBusSubscriber.Bus.FORGE, value = Dist.CLIENT)
 public class ModHudHandler {
@@ -31,73 +31,28 @@ public class ModHudHandler {
     @SubscribeEvent
     public static void onRenderGuiPre(RenderGuiOverlayEvent.Pre event) {
         String path = event.getOverlay().id().getPath();
-
-        // 1. 순정 상태창 및 경험치 바 제거
-        if (path.equals("player_health") || path.equals("food_level") ||
-                path.equals("experience_bar") || path.equals("armor_level") || path.equals("air_level")) {
+        if (path.equals("player_health") ||
+                path.equals("food_level") ||
+                path.equals("experience_bar") ||
+                path.equals("hotbar") ||
+                path.equals("armor_level") ||
+                path.equals("air_level")) {
             event.setCanceled(true);
             return;
         }
-
-        // 2. [핵심] 핫바 좌표 날리기 (인벤토리가 닫혀있을 때만)
-        if (path.equals("hotbar")) {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.screen == null) {
-                event.getGuiGraphics().pose().pushPose();
-                event.getGuiGraphics().pose().translate(0, 5000, 0); // 화면 아래로 멀리 날림
-            }
-        }
-    }
-
-    @SubscribeEvent
-    public static void onRenderGuiPost(RenderGuiOverlayEvent.Post event) {
-        String path = event.getOverlay().id().getPath();
-
-        // 3. 밀어냈던 핫바 좌표 복구
-        if (path.equals("hotbar")) {
-            Minecraft mc = Minecraft.getInstance();
-            if (mc.screen == null) {
-                event.getGuiGraphics().pose().popPose();
-            }
-        }
-
-        // 4. [핵심] 중복 렌더링 방지: 오직 hotbar 레이어 직후에만 커스텀 HUD를 그림
-        if (!path.equals("hotbar")) return;
-
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.options.hideGui) return;
-
-        GuiGraphics guiGraphics = event.getGuiGraphics();
-        int screenWidth = event.getWindow().getGuiScaledWidth();
-        int screenHeight = event.getWindow().getGuiScaledHeight();
-
-        // --- 렌더링 시작 ---
-        renderCompass(guiGraphics, mc, (screenWidth / 2) - 100, 0, 200, 15);
-        renderRustHotbar(guiGraphics, mc, screenWidth, screenHeight);
-
-        int barX = screenWidth - 130;
-        int barYStart = screenHeight - 50;
-        renderRustBar(guiGraphics, mc, HUD_BG, HP_ICON, barX, barYStart, mc.player.getHealth(), 100.0f, 0xFF5DB31F);
-        renderRustBar(guiGraphics, mc, HUD_BG, THIRST_ICON, barX, barYStart + 16, ClientThirstData.get(), 250.0f, 0xFF1DA1F2);
-        renderRustBar(guiGraphics, mc, HUD_BG, HUNGER_ICON, barX, barYStart + 32, com.example.examplemod.Hunger.ClientHungerData.get(), 500.0f, 0xFFD87820);
     }
 
     @SubscribeEvent
     public static void onRenderGui(RenderGuiOverlayEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.options.hideGui) return;
 
         GuiGraphics guiGraphics = event.getGuiGraphics();
         int screenWidth = event.getWindow().getGuiScaledWidth();
         int screenHeight = event.getWindow().getGuiScaledHeight();
 
         // --- 1. 나침반 섹션 (상단 중앙) ---
-        int compassWidth = 200;
-        int compassHeight = 15; // 높이를 살짝 줄여서 더 슬림하게
-        int compassX = (screenWidth / 2) - (compassWidth / 2);
-
-        renderCompass(guiGraphics, mc, compassX, 0, compassWidth, compassHeight);
-        renderRustHotbar(guiGraphics, mc, screenWidth, screenHeight);
+        renderCompass(guiGraphics, mc, (event.getWindow().getGuiScaledWidth() / 2) - 100, 0, 200, 15);
+        renderRustHotbar(guiGraphics, mc, event.getWindow().getGuiScaledWidth(), event.getWindow().getGuiScaledHeight());
         // --- 2. 상태 바 섹션 (우측 하단) ---
         // 변수 이름을 barX로 변경하여 중복 방지
         int barX = screenWidth - 130;
@@ -128,6 +83,7 @@ public class ModHudHandler {
             renderStatusAlert(guiGraphics, mc, DEBUFF_BG, THIRST_ICON2, "목마름", alertX, alertY, 0xFF1DA1F2);
             alertY -= 18;
         }
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
 
     private static void renderStatusAlert(GuiGraphics guiGraphics, Minecraft mc, ResourceLocation bg, ResourceLocation icon, String label, int x, int y, int color) {
@@ -155,7 +111,9 @@ public class ModHudHandler {
         guiGraphics.drawString(mc.font, label, 0, 0, 0xFFFFFFFF, true);
         guiGraphics.pose().popPose();
 
-        RenderSystem.disableBlend();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
     }
 
     private static void renderRustBar(GuiGraphics guiGraphics, Minecraft mc, ResourceLocation bgPath, ResourceLocation iconPath, int x, int y, float value, float max, int barColor) {
@@ -197,7 +155,9 @@ public class ModHudHandler {
         guiGraphics.drawString(mc.font, String.valueOf((int)value), 0, 0, 0xFFFFFFFF, false);
         guiGraphics.pose().popPose();
 
-        RenderSystem.disableBlend();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
     }
     @SubscribeEvent
     public static void onPlayerTick(net.minecraftforge.event.TickEvent.PlayerTickEvent event) {
@@ -287,14 +247,13 @@ public class ModHudHandler {
         }
 
         // --- [2단계: 아이템 및 기타 요소 그리기 (불투명)] ---
-        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F); // 다시 완전 불투명으로 복구
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
 
         for (int i = 0; i < slotCount; i++) {
             int slotX = startX + (i * (slotSize + padding));
             net.minecraft.world.item.ItemStack stack = mc.player.getInventory().getItem(i);
 
             if (!stack.isEmpty()) {
-                // 아이템 본체
                 guiGraphics.renderItem(stack, slotX + 4, y + 4);
 
                 // 아이템 개수 (직접 그리기)
@@ -315,16 +274,8 @@ public class ModHudHandler {
                     guiGraphics.fill(slotX + 1, y + 20 - barHeight, slotX + 3, y + 20, 0xFF5DB31F);
                 }
             }
-
-            // 슬롯 번호
-            guiGraphics.pose().pushPose();
-            guiGraphics.pose().translate(slotX + 3, y + 2, 200);
-            guiGraphics.pose().scale(0.5f, 0.5f, 0.5f);
-            guiGraphics.drawString(mc.font, String.valueOf(i + 1), 0, 0, 0xFFFFFFFF, true);
-            guiGraphics.pose().popPose();
         }
-
-        RenderSystem.disableBlend();
+        RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
     }
     @SubscribeEvent
     public static void onClientTick(TickEvent.PlayerTickEvent event) {

@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockSetType;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
@@ -79,5 +80,10 @@ public class ArmoredDoorBlock extends DoorBlock {
                     SoundSource.BLOCKS, 1.0F, 1.0F);
         }
         super.playerWillDestroy(level, pos, state, player);
+    }
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        // DoorBlock에서 상속받은 FACING, OPEN, HINGE, POWERED, HALF를 모두 등록해야 합니다.
+        super.createBlockStateDefinition(builder);
     }
 }

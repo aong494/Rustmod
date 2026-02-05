@@ -93,16 +93,13 @@ public class BigDoorBlock extends BaseEntityBlock {
         }
         level.sendBlockUpdated(pos, state, state, 3);
     }
-
     @Override
     public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hit) {
         if (!level.isClientSide) {
             boolean newState = !state.getValue(OPEN);
             Direction facing = state.getValue(FACING);
             Direction right = facing.getClockWise();
-
             level.setBlock(pos, state.setValue(OPEN, newState), 3);
-
             for (int y = 0; y < 4; y++) {
                 for (int x = 0; x < 4; x++) {
                     if (x == 0 && y == 0) continue;

@@ -3,5 +3,7 @@
   "block.examplemod.door_dummy": "Door Dummy",
   "block.examplemod.armored_door": "합금 문",
   "item.examplemod.armored_door": "합금 문",
+  "block.examplemod.tool_cupboard": "도구함",
+  "item.examplemod.tool_cupboard": "도구함",
   "creativetab.example_tab": "Rust"
 }
