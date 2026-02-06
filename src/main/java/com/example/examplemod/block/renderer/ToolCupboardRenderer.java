@@ -2,6 +2,7 @@ package com.example.examplemod.block.renderer;
 
 import com.example.examplemod.block.ModBlocks;
 import com.example.examplemod.block.ToolCupboardBlock;
+import com.example.examplemod.block.ToolCupboardBlockEntity;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
@@ -13,36 +14,35 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraftforge.client.model.data.ModelData;
 
-public class ToolCupboardRenderer implements BlockEntityRenderer<TrappedChestBlockEntity> {
+public class ToolCupboardRenderer implements BlockEntityRenderer<ToolCupboardBlockEntity> { // 대상 변경
     private final BlockRenderDispatcher blockRenderer;
 
     public ToolCupboardRenderer(BlockEntityRendererProvider.Context context) {
         this.blockRenderer = context.getBlockRenderDispatcher();
     }
+
     @Override
-    public void render(TrappedChestBlockEntity be, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
-        // 플러그인이 준 이름 "도구함"과 일치하는지 확인
-        if (be.hasCustomName() && be.getCustomName().getString().equals("도구함")) {
-            poseStack.pushPose();
+    public void render(ToolCupboardBlockEntity be, float partialTicks, PoseStack poseStack, MultiBufferSource buffer, int combinedLight, int combinedOverlay) {
+        poseStack.pushPose();
 
-            // 덫상자 텍스처와 겹쳐서 지직거리는(Z-fighting) 현상 방지를 위해 아주 미세하게 확대
-            poseStack.translate(0.0005, 0.0005, 0.0005);
-            poseStack.scale(0.999f, 0.999f, 0.999f);
+        // [수정] 이제 본체 위치(아래칸)에서 그대로 그립니다.
+        // 겹침 방지를 위한 미세한 수치만 조정합니다.
+        poseStack.translate(0.001, 0.001, 0.001);
+        poseStack.scale(0.998f, 0.998f, 0.998f);
 
-            BlockState cupboardState = ModBlocks.TOOL_CUPBOARD.get().defaultBlockState()
-                    .setValue(ToolCupboardBlock.HALF, DoubleBlockHalf.LOWER);
+        BlockState cupboardState = ModBlocks.TOOL_CUPBOARD.get().defaultBlockState()
+                .setValue(ToolCupboardBlock.HALF, DoubleBlockHalf.LOWER);
 
-            this.blockRenderer.renderSingleBlock(
-                    cupboardState,
-                    poseStack,
-                    buffer,
-                    combinedLight,
-                    combinedOverlay,
-                    ModelData.EMPTY,
-                    RenderType.cutout()
-            );
+        this.blockRenderer.renderSingleBlock(
+                cupboardState,
+                poseStack,
+                buffer,
+                combinedLight,
+                combinedOverlay,
+                ModelData.EMPTY,
+                RenderType.cutout()
+        );
 
-            poseStack.popPose();
-        }
+        poseStack.popPose();
     }
 }

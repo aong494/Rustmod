@@ -130,12 +130,11 @@ public class    ExampleMod
             event.registerBlockEntityRenderer(ModBlockEntities.BIG_DOOR.get(),
                     context -> new com.example.examplemod.block.renderer.BigDoorRenderer(context));
 
-            // 2. [추가] 덫상자 렌더러 가로채기 등록
-            // TrappedChestBlockEntity가 렌더링될 때 우리가 만든 커스텀 렌더러를 사용하게 합니다.
-            event.registerBlockEntityRenderer(net.minecraft.world.level.block.entity.BlockEntityType.TRAPPED_CHEST,
+            // 2. [수정] 모델링을 아래쪽 모드 블록(TOOL_CUPBOARD_BE)에 직접 연결
+            event.registerBlockEntityRenderer(ModBlockEntities.TOOL_CUPBOARD_BE.get(),
                     context -> new com.example.examplemod.block.renderer.ToolCupboardRenderer(context));
 
-            LOGGER.info("RUST_STYLE: Custom ToolCupboard Renderer registered to Trapped Chest.");
+            LOGGER.info("RUST_STYLE: Renderer registered to ToolCupboardBlockEntity (Lower Block).");
         }
     }
 }

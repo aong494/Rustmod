@@ -61,7 +61,11 @@ public class ModMessages {
                 .encoder(SyncResistancePacket::toBytes)
                 .consumerMainThread(SyncResistancePacket::handle)
                 .add();
-
+        INSTANCE.messageBuilder(S2CMaintenancePacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(S2CMaintenancePacket::new)
+                .encoder(S2CMaintenancePacket::toBytes)
+                .consumerMainThread(S2CMaintenancePacket::handle)
+                .add();
     }
 
     public static <MSG> void sendToServer(MSG message) {

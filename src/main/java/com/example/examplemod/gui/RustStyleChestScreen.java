@@ -36,6 +36,8 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
 
     private static final Field slotXField = ObfuscationReflectionHelper.findField(Slot.class, "f_40220_");
     private static final Field slotYField = ObfuscationReflectionHelper.findField(Slot.class, "f_40221_");
+    public static boolean isDecaying = false;
+    public static String maintenanceCost = "";
 
     static {
         slotXField.setAccessible(true);
@@ -118,25 +120,48 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
         // 1. 일반 슬롯 렌더링
         renderVanillaSlots(guiGraphics, mouseX, mouseY);
 
-        // 2. 갑옷 4칸 렌더링 (인벤토리에서 직접 참조)
+        // 2. 갑옷 및 커스텀 슬롯 렌더링
         if (this.minecraft.player != null) {
             for (int i = 0; i < 4; i++) {
-                // 서버가 보낸 패킷이 inventory.armor에 저장되므로 여기서 실시간 참조
                 ItemStack armorStack = this.minecraft.player.getInventory().armor.get(3 - i);
                 renderVirtualSlot(guiGraphics, armorStack, armorStartX + (i * 28) + 3, armorStartY + 3, mouseX, mouseY);
             }
 
-            // 3. 커스텀 슬롯 2칸 렌더링 (Capability 직접 참조)
             this.minecraft.player.getCapability(PlayerGearCapability.GEAR_CAPABILITY).ifPresent(cap -> {
                 renderVirtualSlot(guiGraphics, cap.inventory.getStackInSlot(0), extraX0, extraY0, mouseX, mouseY);
                 renderVirtualSlot(guiGraphics, cap.inventory.getStackInSlot(1), extraX1, extraY1, mouseX, mouseY);
             });
         }
+
         renderStats(guiGraphics);
+
+        // --- [추가] 도구함 전용 텍스트 강제 렌더링 ---
+        String titleStr = this.title.getString();
+        if (titleStr.contains("도구함") || titleStr.toLowerCase().contains("cupboard")) {
+            guiGraphics.pose().pushPose();
+            guiGraphics.pose().translate(0, 0, 300);
+
+            int drawX = this.leftPos + 355;
+            int drawY = this.topPos + 185;
+
+            // 1. 유지보수 자원 목록 (서버에서 받은 문자열 출력)
+            guiGraphics.drawString(this.font, "§720분 유지보수 필요 자원", drawX, drawY, 0xFFFFFFFF, true);
+            guiGraphics.drawString(this.font, "§f" + maintenanceCost, drawX, drawY + 15, 0xFFFFFFFF, true);
+
+            // 2. 보호 상태에 따른 텍스트 및 색상 변경
+            if (isDecaying) {
+                guiGraphics.drawString(this.font, "§c건물 부식 중", drawX, drawY + 95, 0xFFFF0000, true);
+            } else {
+                guiGraphics.drawString(this.font, "§a보호 중", drawX, drawY + 95, 0xFF5DB31F, true);
+            }
+
+            guiGraphics.pose().popPose();
+        }
+
+        // 3. 마우스 아이템 및 툴팁 (이게 가장 위에 와야 함)
         renderMouseItem(guiGraphics, mouseX, mouseY);
         this.renderTooltip(guiGraphics, mouseX, mouseY);
     }
-
     private void renderVirtualSlot(GuiGraphics g, ItemStack stack, int x, int y, int mx, int my) {
         int sx = this.leftPos + x;
         int sy = this.topPos + y;
@@ -280,15 +305,5 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
     protected boolean isHovering(int pX, int pY, int pWidth, int pHeight, double pMouseX, double pMouseY) {
         if (pWidth <= 18 && pHeight <= 18) return super.isHovering(pX - 3, pY - 3, 24, 24, pMouseX, pMouseY);
         return super.isHovering(pX, pY, pWidth, pHeight, pMouseX, pMouseY);
-    }
-
-    @Override
-    protected void renderLabels(GuiGraphics g, int x, int y) {
-        // 제목이 도구함일 때만 추가 텍스트 표시
-        if (this.title.getString().contains("도구함")) {
-            // 위치(x, y)는 GUI 이미지 내의 빈 공간 좌표에 맞춰 조절하세요.
-            g.drawString(this.font, "§720분 유지보수 필요 자원", 350, 185, 0xFFFFFFFF, true);
-            g.drawString(this.font, "§a보호 중", 350, 280, 0xFF5DB31F, true);
-        }
     }
 }
