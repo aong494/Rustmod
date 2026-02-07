@@ -1,12 +1,12 @@
 package com.example.examplemod;
 
-import com.example.examplemod.gui.RustStyleChestScreen;
-import com.example.examplemod.gui.RustStyleLargeChestScreen;
+import com.example.examplemod.gui.*;
 import com.example.examplemod.item.ModItems;
 import com.example.examplemod.sound.ModSounds;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
@@ -28,7 +28,6 @@ import net.minecraft.world.inventory.MenuType;
 import software.bernie.geckolib.GeckoLib;
 import com.example.examplemod.block.ModBlocks;
 import com.example.examplemod.block.ModBlockEntities;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 
 // The value here should match an entry in the META-INF/mods.toml file
 @Mod(ExampleMod.MODID)
@@ -100,41 +99,30 @@ public class    ExampleMod
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
     @Mod.EventBusSubscriber(modid = MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
-    public static class ClientModEvents
-    {
+    public static class ClientModEvents {
         @SubscribeEvent
-        public static void onClientSetup(FMLClientSetupEvent event)
-        {
+        public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
-                // [안전 장치] try-catch로 감싸서 중복 등록 에러가 나더라도 게임이 꺼지지 않게 합니다.
-                try {
-                    // 작은 상자 등록
-                    MenuScreens.register(MenuType.GENERIC_9x3, RustStyleChestScreen::new);
-                } catch (IllegalStateException e) {
-                    LOGGER.warn("RUST_UI: 9x3 screen already registered, skipping...");
-                }
+                // 중복 등록 방지를 위해 각 장치별로 안전하게 등록
+                registerScreen(MenuType.FURNACE, RustStyleFurnaceScreen::new, "Furnace");
+                registerScreen(MenuType.BLAST_FURNACE, RustStyleBlastFurnaceScreen::new, "Blast Furnace");
+                registerScreen(MenuType.SMOKER, RustStyleSmokerScreen::new, "Smoker");
 
-                try {
-                    // 큰 상자 등록
-                    MenuScreens.register(MenuType.GENERIC_9x6, RustStyleLargeChestScreen::new);
-                } catch (IllegalStateException e) {
-                    LOGGER.warn("RUST_UI: 9x6 screen already registered, skipping...");
-                }
-
-                LOGGER.info("RUST_UI: Registered all chest screens safely.");
+                // 상자류도 동일하게 안전 등록
+                registerScreen(MenuType.GENERIC_9x3, RustStyleChestScreen::new, "Chest 9x3");
+                registerScreen(MenuType.GENERIC_9x6, RustStyleLargeChestScreen::new, "Chest 9x6");
             });
         }
-        @SubscribeEvent
-        public static void registerRenderers(final net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
-            // 1. 기존 문 렌더러 등록 (유지)
-            event.registerBlockEntityRenderer(ModBlockEntities.BIG_DOOR.get(),
-                    context -> new com.example.examplemod.block.renderer.BigDoorRenderer(context));
 
-            // 2. [수정] 모델링을 아래쪽 모드 블록(TOOL_CUPBOARD_BE)에 직접 연결
-            event.registerBlockEntityRenderer(ModBlockEntities.TOOL_CUPBOARD_BE.get(),
-                    context -> new com.example.examplemod.block.renderer.ToolCupboardRenderer(context));
-
-            LOGGER.info("RUST_STYLE: Renderer registered to ToolCupboardBlockEntity (Lower Block).");
+        // 등록 대행 메서드 (오류 방지용)
+        private static <M extends net.minecraft.world.inventory.AbstractContainerMenu, U extends net.minecraft.client.gui.screens.Screen & net.minecraft.client.gui.screens.inventory.MenuAccess<M>>
+        void registerScreen(MenuType<? extends M> type, net.minecraft.client.gui.screens.MenuScreens.ScreenConstructor<M, U> factory, String name) {
+            try {
+                MenuScreens.register(type, factory);
+                LOGGER.info("RUST_UI: Registered screen for " + name);
+            } catch (IllegalStateException e) {
+                LOGGER.warn("RUST_UI: Screen for " + name + " already registered. Skipping.");
+            }
         }
     }
 }

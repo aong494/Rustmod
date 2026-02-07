@@ -1,0 +1,19 @@
+package com.example.examplemod.gui;
+
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.BlastFurnaceMenu;
+
+public class RustStyleBlastFurnaceScreen extends RustStyleFurnaceScreenBase<BlastFurnaceMenu> {
+    private static final ResourceLocation TEXTURE = ResourceLocation.tryParse("examplemod:textures/gui/furnace_rust.png");
+
+    public RustStyleBlastFurnaceScreen(BlastFurnaceMenu menu, Inventory playerInventory, Component title) {
+        super(menu, playerInventory, title);
+    }
+
+    @Override
+    protected ResourceLocation getBackgroundTexture() {
+        return TEXTURE;
+    }
+}
