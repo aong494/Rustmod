@@ -43,6 +43,5 @@ public class ModBlocks {
                     .mapColor(MapColor.WOOD)
                     .strength(2.0f)
                     .noOcclusion()
-                    .dynamicShape()
-            ));
+                    .dynamicShape()));
 }
