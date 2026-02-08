@@ -1,27 +1,24 @@
 package com.example.examplemod.gui;
 
 public class CraftingGuiConfigs {
-    // 배경 이미지 크기
-    public static final int GUI_WIDTH = 256;
-    public static final int GUI_HEIGHT = 256;
+    // 0~5번: 상단 카테고리 탭
+    public static final int TAB_X = 185;// 왼쪽 벽에서 떨어진 거리
+    public static final int TAB_Y = 107;// 위쪽 벽에서 떨어진 거리
+    public static final int TAB_SPACING_Y = 19; // 탭 사이의 세로 간격 (슬롯 크기 고려)
 
-    // 상단 탭 (0~5번 슬롯) 시작 좌표
-    public static final int TAB_START_X = 10;
-    public static final int TAB_START_Y = 10;
-    public static final int TAB_SPACING_X = 20; // 탭 간 간격
+    // 6~8번: 수량 조절 (-, 숫자, +)
+    public static final int QTY_X = 351;
+    public static final int QTY_Y = 274;
 
-    // 수량 조절 및 제작 버튼 (커스텀 크기)
-    public static final int MINUS_BTN_X = 150;
-    public static final int MINUS_BTN_Y = 10;
+    // 9~44번: 제작 레시피 목록
+    public static final int LIST_X = 267;
+    public static final int LIST_Y = 95;
 
-    public static final int PLUS_BTN_X = 210;
-    public static final int PLUS_BTN_Y = 10;
+    // 45~51번: 제작 대기열 (하단 7칸)
+    public static final int QUEUE_X = 348;
+    public static final int QUEUE_Y = 238;
 
-    // 대기열 시작 좌표 (7칸)
-    public static final int QUEUE_START_X = 15;
-    public static final int QUEUE_START_Y = 140;
-
-    // [핵심] 제작 버튼 좌표 및 크기 (슬롯을 길게 배치할 곳)
-    public static final int CRAFT_BTN_X = 180;
-    public static final int CRAFT_BTN_Y = 200;
+    // 53번: 제작 시작 버튼 (크게 배치할 위치)
+    public static final int CRAFT_BTN_X = 474;
+    public static final int CRAFT_BTN_Y = 270;
 }
