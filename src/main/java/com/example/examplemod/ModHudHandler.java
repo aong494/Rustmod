@@ -58,9 +58,9 @@ public class ModHudHandler {
         int barX = screenWidth - 130;
         int barYStart = screenHeight - 50;
 
-        // 체력 (최대치 100 반영)
+        // 체력 (최대치 반영)
         renderRustBar(guiGraphics, mc, HUD_BG, HP_ICON, barX, barYStart,
-                mc.player.getHealth(), 100.0f, 0xFF5DB31F);
+                mc.player.getHealth(), 20.0f, 0xFF5DB31F);
 
         // 허기 (커스텀 500 반영)
         renderRustBar(guiGraphics, mc, HUD_BG, HUNGER_ICON, barX, barYStart + 32,

@@ -111,6 +111,10 @@ public class    ExampleMod
                 // 상자류도 동일하게 안전 등록
                 registerScreen(MenuType.GENERIC_9x3, RustStyleChestScreen::new, "Chest 9x3");
                 registerScreen(MenuType.GENERIC_9x6, RustStyleLargeChestScreen::new, "Chest 9x6");
+                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                        ModBlocks.RUST_FURNACE.get(),
+                        net.minecraft.client.renderer.RenderType.cutout()
+                );
             });
         }
 

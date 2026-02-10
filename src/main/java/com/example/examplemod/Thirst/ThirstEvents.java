@@ -62,7 +62,7 @@ public class ThirstEvents {
                 // [중요] 배고픔 감소 로직
                 // 20틱(1초)마다 0.1씩 감소 (취향에 따라 수치 조절)
                 if (player.tickCount % 20 == 0) {
-                    hunger.subHunger(1f); // 실제로 서버 데이터를 깎음
+                    hunger.subHunger(0.1f); // 실제로 서버 데이터를 깎음
 
                     // [중요] 감소된 데이터를 클라이언트로 즉시 전송 (동기화)
                     ModMessages.sendToPlayer(new HungerSyncPacket(hunger.getHunger()), player);
@@ -85,7 +85,7 @@ public class ThirstEvents {
 
                 // 초당 약 0.05씩 자연 감소 (20틱 = 1초)
                 if (player.tickCount % 20 == 0) {
-                    thirst.setThirst(current - 1f);
+                    thirst.setThirst(current - 0.1f);
                     if (player.tickCount % 10 == 0) { // 너무 자주 보내면 렉이 걸리니 0.5초마다 동기화
                         ModMessages.sendToPlayer(new ThirstSyncPacket(thirst.getThirst()), player);
                     }

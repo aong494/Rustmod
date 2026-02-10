@@ -56,15 +56,20 @@ public class ModMessages {
                 .encoder(SyncExtraSlotPacket::toBytes)
                 .consumerMainThread(SyncExtraSlotPacket::handle)
                 .add();
+        INSTANCE.messageBuilder(S2CMaintenancePacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(S2CMaintenancePacket::new)
+                .encoder(S2CMaintenancePacket::toBytes)
+                .consumerMainThread(S2CMaintenancePacket::handle)
+                .add();
         INSTANCE.messageBuilder(SyncResistancePacket.class, 10, NetworkDirection.PLAY_TO_CLIENT)
                 .decoder(SyncResistancePacket::new)
                 .encoder(SyncResistancePacket::toBytes)
                 .consumerMainThread(SyncResistancePacket::handle)
                 .add();
-        INSTANCE.messageBuilder(S2CMaintenancePacket.class, id(), NetworkDirection.PLAY_TO_CLIENT)
-                .decoder(S2CMaintenancePacket::new)
-                .encoder(S2CMaintenancePacket::toBytes)
-                .consumerMainThread(S2CMaintenancePacket::handle)
+        INSTANCE.messageBuilder(S2CCraftAmountPacket.class, 11, NetworkDirection.PLAY_TO_CLIENT)
+                .decoder(S2CCraftAmountPacket::new)
+                .encoder(S2CCraftAmountPacket::toBytes)
+                .consumerMainThread(S2CCraftAmountPacket::handle)
                 .add();
     }
 

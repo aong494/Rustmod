@@ -295,9 +295,8 @@
             if (hoveredSlot != null && hoveredSlot.isActive()) {
                 int sx = this.leftPos + hoveredSlot.x;
                 int sy = this.topPos + hoveredSlot.y;
-                RenderSystem.disableDepthTest();
-                guiGraphics.fill(sx - 3, sy - 3, sx + 21, sy + 21, 0x80FFFFFF);
-                RenderSystem.enableDepthTest();
+                // 직접 fill 하지 말고 우리가 만든 메서드 호출
+                renderCustomSlotHighlight(guiGraphics, sx, sy, hoveredSlot);
             }
             // --- 저항 수치 표시 섹션 ---
             int statsX = this.leftPos + this.imageWidth - 428;
@@ -323,6 +322,12 @@
             // [7] 툴팁 그리기 (가장 마지막)
             this.hoveredSlot = findHoveredSlot();
             super.renderTooltip(guiGraphics, mouseX, mouseY);
+        }
+        protected void renderCustomSlotHighlight(GuiGraphics guiGraphics, int sx, int sy, Slot slot) {
+            RenderSystem.disableDepthTest();
+            // 기본 인벤토리용 24x24 하이라이트
+            guiGraphics.fill(sx - 3, sy - 3, sx + 21, sy + 21, 0x80FFFFFF);
+            RenderSystem.enableDepthTest();
         }
         private void renderSlotDecorations(GuiGraphics guiGraphics, ItemStack stack, int x, int y) {
             if (stack.isEmpty()) return;

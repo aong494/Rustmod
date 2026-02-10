@@ -29,14 +29,14 @@ public class ModAttributeHandler {
         // 최대 체력 속성 고정
         AttributeInstance maxHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
         if (maxHealthAttr != null) {
-            maxHealthAttr.setBaseValue(100.0D);
+            maxHealthAttr.setBaseValue(20.0D);
         }
 
         // 저장된 체력 값 복구
         player.getCapability(com.example.examplemod.Hunger.HungerProvider.PLAYER_HUNGER).ifPresent(cap -> {
             float healthToRestore = cap.getSavedHealth();
             // 만약 저장된 값이 0 이하(사망 상태 등)라면 60으로 초기화
-            if (healthToRestore <= 0) healthToRestore = 60.0F;
+            if (healthToRestore <= 0) healthToRestore = 15.0F;
             player.setHealth(healthToRestore);
         });
         syncGear(player);
@@ -49,7 +49,7 @@ public class ModAttributeHandler {
         // 1. 새 플레이어의 최대 체력 먼저 설정
         AttributeInstance newMaxHealth = newPlayer.getAttribute(Attributes.MAX_HEALTH);
         if (newMaxHealth != null) {
-            newMaxHealth.setBaseValue(100.0D);
+            newMaxHealth.setBaseValue(20.0D);
         }
         if (!event.isWasDeath()) {
             oldPlayer.getCapability(com.example.examplemod.capability.PlayerGearCapability.GEAR_CAPABILITY).ifPresent(oldCap -> {
@@ -64,7 +64,7 @@ public class ModAttributeHandler {
         if (event.isWasDeath()) {
             // 죽어서 부활한 경우 60으로 설정
             // 주의: 여기서 setHealth를 해도 마인크래프트가 나중에 100으로 채울 수 있음
-            newPlayer.setHealth(60.0F);
+            newPlayer.setHealth(15.0F);
         } else {
             // 차원 이동 등은 기존 체력 유지
             newPlayer.setHealth(oldPlayer.getHealth());
@@ -101,9 +101,9 @@ public class ModAttributeHandler {
         // 1. 최대 체력 100 확인 및 체력 60으로 설정
         net.minecraft.world.entity.ai.attributes.AttributeInstance maxHealth = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH);
         if (maxHealth != null) {
-            maxHealth.setBaseValue(100.0D);
+            maxHealth.setBaseValue(20.0D);
         }
-        player.setHealth(60.0F);
+        player.setHealth(15.0F);
 
         // 2. 커스텀 배고픔(Hunger)을 100으로 설정 및 클라이언트 동기화
         player.getCapability(com.example.examplemod.Hunger.HungerProvider.PLAYER_HUNGER).ifPresent(hunger -> {

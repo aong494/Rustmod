@@ -286,7 +286,7 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
                     renderSlotDecorations(g, slot.getItem(), sx, sy);
                 }
                 if (isHovering(slot.x, slot.y, 18, 18, mx, my)) {
-                    g.fill(sx-3, sy-3, sx+21, sy+21, 0x80FFFFFF);
+                    renderCustomSlotHighlight(g, sx, sy, slot);
                 }
             }
         }
@@ -353,5 +353,11 @@ public class RustStyleChestScreen extends AbstractContainerScreen<ChestMenu> {
     protected boolean isHovering(int pX, int pY, int pWidth, int pHeight, double pMouseX, double pMouseY) {
         if (pWidth <= 18 && pHeight <= 18) return super.isHovering(pX - 3, pY - 3, 24, 24, pMouseX, pMouseY);
         return super.isHovering(pX, pY, pWidth, pHeight, pMouseX, pMouseY);
+    }
+    protected void renderCustomSlotHighlight(GuiGraphics guiGraphics, int sx, int sy, Slot slot) {
+        RenderSystem.disableDepthTest();
+        // 기본 슬롯 하이라이트 (24x24)
+        guiGraphics.fill(sx - 3, sy - 3, sx + 21, sy + 21, 0x80FFFFFF);
+        RenderSystem.enableDepthTest();
     }
 }

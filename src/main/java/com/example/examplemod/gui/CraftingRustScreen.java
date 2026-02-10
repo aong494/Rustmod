@@ -11,9 +11,8 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 public class CraftingRustScreen extends RustStyleChestScreen {
-    // 제작 전용 배경 이미지
     private static final ResourceLocation CRAFT_TEXTURE = ResourceLocation.tryParse("examplemod:textures/gui/crafting_rust.png");
-
+    public static int clientAmount = 1;
     public CraftingRustScreen(ChestMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
     }
@@ -25,42 +24,44 @@ public class CraftingRustScreen extends RustStyleChestScreen {
     }
     @Override
     public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        // 1. 전체 배경 어둡게 (딤 처리)
-        this.renderBackground(guiGraphics);
-
-        // 2. [트릭] super.render가 바닐라 하이라이트를 그리지 못하게 잠시 null 처리
-        Slot realHovered = this.hoveredSlot;
-        if (realHovered != null && realHovered.index >= 0 && realHovered.index <= 5) {
-            this.hoveredSlot = null;
-        }
-
-        // 3. 배경 이미지 및 아이템 렌더링 (여기서 renderBg가 호출됨)
         super.render(guiGraphics, mouseX, mouseY, partialTick);
 
-        // 4. 다시 원래대로 복구 (툴팁 및 클릭 판정용)
-        this.hoveredSlot = realHovered;
+        // [핵심] 모드의 폰트 렌더러를 사용하여 텍스트 출력
+        // x, y 좌표는 수량 조절 버튼(Slot 7) 위치에 맞춰 조정하세요.
+        int amountX = this.leftPos + 388; // 예시 좌표
+        int amountY = this.topPos + 280;
 
-        // 5. [중요] 커스텀 하이라이트를 가장 높은 레이어에 강제로 그리기
-        if (this.hoveredSlot != null && this.hoveredSlot.index >= 0 && this.hoveredSlot.index <= 5) {
-            int sx = this.leftPos + this.hoveredSlot.x;
-            int sy = this.topPos + this.hoveredSlot.y;
+        // 서버에서 받은 수량 변수 (예: clientAmount)
+        String text = String.valueOf(this.clientAmount);
 
-            guiGraphics.pose().pushPose();
-            // z-index를 300 이상으로 높여 아이템 아이콘보다 앞으로 보냅니다.
-            guiGraphics.pose().translate(0, 0, 300);
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0, 0, 300); // 슬롯보다 위에 출력
 
-            RenderSystem.disableDepthTest();
-            // 설정하신 25x16 크기에 맞춰 하이라이트 사각형 렌더링
-            guiGraphics.fill(sx - 7, sy - 7, sx + 47, sy + 16, 0x80FFFFFF);
-            RenderSystem.enableDepthTest();
+        // 중앙 정렬하여 그리기
+        guiGraphics.drawCenteredString(this.font, text, amountX, amountY, 0xFFFFFFFF);
 
-            guiGraphics.pose().popPose();
+        guiGraphics.pose().popPose();
+    }
+    // CraftingRustScreen.java
+    @Override
+    protected void renderCustomSlotHighlight(GuiGraphics guiGraphics, int sx, int sy, Slot slot) {
+        RenderSystem.disableDepthTest();
+
+        if (slot.index >= 0 && slot.index <= 5) {
+            // 탭 버튼 전용 수치
+            guiGraphics.fill(sx - 7, sy - 7, sx + 47, sy + 11, 0xAAFFFFFF);
+        }
+        else if (slot.index == 52) {
+            // 제작 버튼 전용 수치
+            guiGraphics.fill(sx - 3, sy - 3, sx + 32, sy + 21, 0xAAFFFFFF);
+        }
+        else {
+            // 나머지는 부모(InventoryScreen)의 24x24 기본형 사용
+            super.renderCustomSlotHighlight(guiGraphics, sx, sy, slot);
         }
 
-        // 6. 툴팁 렌더링 (최상단)
-        this.renderTooltip(guiGraphics, mouseX, mouseY);
+        RenderSystem.enableDepthTest();
     }
-
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         int guiX = (this.width - this.imageWidth) / 2;
@@ -159,25 +160,24 @@ public class CraftingRustScreen extends RustStyleChestScreen {
     }
     @Override
     protected boolean isHovering(int pX, int pY, int pWidth, int pHeight, double pMouseX, double pMouseY) {
-        // 1. 현재 이 체크가 수행되는 '슬롯'이 무엇인지 찾아야 합니다.
         Slot slot = this.findHoveredSlotByPos(pX, pY);
-
         if (slot != null) {
-            // 탭 버튼(0~5번)인 경우: 예를 들어 32x32 크기로 상호작용 범위를 설정
-            if (slot.index >= 0 && slot.index <= 5) {
-                // 중심(offset)을 고려하여 클릭 박스를 확장 (24x24보다 더 크게 설정 가능)
-                return super.isHovering(pX - 7, pY - 7, 47, 16, pMouseX, pMouseY);
-            }
+            double mx = pMouseX - (double)this.leftPos;
+            double my = pMouseY - (double)this.topPos;
+        if (slot != null && slot.index >= 0 && slot.index <= 5) {
+            double mouseX = pMouseX - (double)this.leftPos;
+            double mouseY = pMouseY - (double)this.topPos;
+            return mouseX >= (double)(slot.x - 7) && mouseX < (double)(slot.x + 47) &&
+                    mouseY >= (double)(slot.y - 7) && mouseY < (double)(slot.y + 11);
         }
-
-        // 2. 일반 인벤토리 슬롯 (기존 24x24 확장 유지)
-        if (pWidth <= 18 && pHeight <= 18) {
-            return super.isHovering(pX - 3, pY - 3, 24, 24, pMouseX, pMouseY);
+        else if (slot.index == 52) {
+            // 제작 버튼 하이라이트 범위와 동일하게 맞춤
+            return mx >= (double)(slot.x - 3) && mx < (double)(slot.x - 3 + 35) &&
+                    my >= (double)(slot.y - 3) && my < (double)(slot.y - 3 + 24);
         }
-
+        }
         return super.isHovering(pX, pY, pWidth, pHeight, pMouseX, pMouseY);
-    }
-
+}
     // 좌표를 통해 슬롯을 역추적하는 보조 메서드
     private Slot findHoveredSlotByPos(int x, int y) {
         for (Slot slot : this.menu.slots) {
