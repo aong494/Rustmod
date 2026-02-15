@@ -22,12 +22,12 @@ public class ThirstSyncPacket {
     }
 
     // 클라이언트에서 패킷을 받았을 때 실행될 로직
-    public boolean handle(Supplier<NetworkEvent.Context> supplier) {
+    public void handle(Supplier<NetworkEvent.Context> supplier) {
         NetworkEvent.Context context = supplier.get();
         context.enqueueWork(() -> {
-            // 클라이언트 사이드에서만 실행
-            ClientThirstData.set(thirst);
+            // 클라이언트 데이터 저장소에 서버에서 받은 값 저장
+            com.example.examplemod.Thirst.ClientThirstData.set(this.thirst);
         });
-        return true;
+        context.setPacketHandled(true);
     }
 }

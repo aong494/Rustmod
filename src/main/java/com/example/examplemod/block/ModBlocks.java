@@ -1,6 +1,8 @@
 package com.example.examplemod.block;
 
 import com.example.examplemod.ExampleMod;
+import com.example.examplemod.block.renderer.RustFurnaceBlockEntity;
+import com.example.examplemod.world.inventory.RustFurnaceMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
@@ -58,31 +60,78 @@ public class ModBlocks {
                     .mapColor(MapColor.STONE)
                     .strength(3.5F)
                     .sound(SoundType.STONE)
-                    .requiresCorrectToolForDrops()
-                    .noOcclusion() // 1. Properties 레벨에서 투명 설정
+                    .noOcclusion()
+                    .lightLevel(state -> state.getValue(FurnaceBlock.LIT) ? 13 : 0)
             ) {
-                // [해결책 1] 주변 바닐라 블록이 면을 숨기는 것을 방지하는 핵심 메서드
                 @Override
-                public boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) {
-                    return false;
+                public net.minecraft.world.InteractionResult use(BlockState state, net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos, net.minecraft.world.entity.player.Player player, net.minecraft.world.InteractionHand hand, net.minecraft.world.phys.BlockHitResult hit) {
+                    if (!level.isClientSide) {
+                        net.minecraft.world.level.block.entity.BlockEntity be = level.getBlockEntity(pos);
+                        if (be instanceof RustFurnaceBlockEntity furnaceBE) {
+                            player.openMenu(new net.minecraft.world.SimpleMenuProvider((id, inv, p) ->
+                                    new RustFurnaceMenu(id, inv, furnaceBE, furnaceBE.getContainerData()),
+                                    net.minecraft.network.chat.Component.literal("Rust Furnace")));
+                        }
+                    }
+                    return net.minecraft.world.InteractionResult.sidedSuccess(level.isClientSide);
                 }
-
-                // [해결책 2] 엔진이 이 블록을 '꽉 찬 블록'으로 판단하지 않게 함
                 @Override
-                public VoxelShape getOcclusionShape(BlockState state, BlockGetter world, BlockPos pos) {
-                    return Shapes.empty();
+                public net.minecraft.world.level.block.entity.BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+                    return ModBlockEntities.RUST_FURNACE_BE.get().create(pos, state);
                 }
-
-                // [해결책 3] 시각적/빛 계산 시 빈 공간으로 인식하게 함
                 @Override
-                public VoxelShape getVisualShape(BlockState state, BlockGetter world, BlockPos pos, CollisionContext context) {
-                    return Shapes.empty();
+                public <T extends net.minecraft.world.level.block.entity.BlockEntity> net.minecraft.world.level.block.entity.BlockEntityTicker<T> getTicker(net.minecraft.world.level.Level level, BlockState state, net.minecraft.world.level.block.entity.BlockEntityType<T> type) {
+                    if (level.isClientSide) return null;
+                    return createFurnaceTicker(level, type, ModBlockEntities.RUST_FURNACE_BE.get());
                 }
-
-                // [해결책 4] 빛 투과 허용
                 @Override
-                public boolean propagatesSkylightDown(BlockState state, BlockGetter reader, BlockPos pos) {
-                    return true;
+                public boolean skipRendering(BlockState state, BlockState adjacentBlockState, Direction side) { return false; }
+                @Override
+                public VoxelShape getOcclusionShape(BlockState state, BlockGetter world, BlockPos pos) { return Shapes.empty(); }
+                @Override
+                public void animateTick(BlockState state, net.minecraft.world.level.Level level, net.minecraft.core.BlockPos pos, net.minecraft.util.RandomSource random) {
+                    if (state.getValue(FurnaceBlock.LIT)) {
+                        double x = (double)pos.getX() + 0.5D;
+                        double y = (double)pos.getY() + 0.6D;
+                        double z = (double)pos.getZ();
+
+                        if (random.nextDouble() < 0.1D) {
+                            level.playLocalSound(x, y, z, net.minecraft.sounds.SoundEvents.FURNACE_FIRE_CRACKLE, net.minecraft.sounds.SoundSource.BLOCKS, 1.0F, 1.0F, false);
+                        }
+
+                        net.minecraft.core.Direction direction = state.getValue(FurnaceBlock.FACING);
+                        net.minecraft.core.Direction.Axis axis = direction.getAxis();
+                        double d4 = random.nextDouble() * 0.6D - 0.3D;
+                        double d5 = axis == net.minecraft.core.Direction.Axis.X ? (double)direction.getStepX() * 0.52D : d4;
+                        double d6 = random.nextDouble() * 6.0D / 16.0D;
+                        double d7 = axis == net.minecraft.core.Direction.Axis.Z ? (double)direction.getStepZ() * 0.52D : d4;
+
+                        level.addParticle(net.minecraft.core.particles.ParticleTypes.SMOKE, x + d5, y + d6, z + d7, 0.0D, 0.0D, 0.0D);
+                        level.addParticle(net.minecraft.core.particles.ParticleTypes.FLAME, x + d5, y + d6, z + d7, 0.0D, 0.0D, 0.0D);
+                    }
                 }
             });
+    public static final RegistryObject<Block> GREEN_KEYCARD_BLOCK = BLOCKS.register("green_keycard_block",
+            () -> new KeycardBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_GREEN)
+                    .noCollission()
+                    .instabreak()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> BLUE_KEYCARD_BLOCK = BLOCKS.register("blue_keycard_block",
+            () -> new KeycardBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_BLUE)
+                    .noCollission()
+                    .instabreak()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> RED_KEYCARD_BLOCK = BLOCKS.register("red_keycard_block",
+            () -> new KeycardBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_RED)
+                    .noCollission()
+                    .instabreak()
+                    .noOcclusion()));
+    public static final RegistryObject<Block> KEYCARD_READER = BLOCKS.register("keycard_reader",
+            () -> new KeycardReaderBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.0f)
+                    .noOcclusion()));
 }

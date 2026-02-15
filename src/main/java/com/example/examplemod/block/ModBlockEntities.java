@@ -1,6 +1,7 @@
 package com.example.examplemod.block;
 
 import com.example.examplemod.ExampleMod;
+import com.example.examplemod.block.renderer.RustFurnaceBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -27,4 +28,9 @@ public class ModBlockEntities {
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);
     }
+    // 기존 코드 아래에 추가
+    public static final RegistryObject<BlockEntityType<RustFurnaceBlockEntity>> RUST_FURNACE_BE =
+            BLOCK_ENTITIES.register("rust_furnace_be", () ->
+                    BlockEntityType.Builder.of(RustFurnaceBlockEntity::new,
+                            ModBlocks.RUST_FURNACE.get()).build(null));
 }

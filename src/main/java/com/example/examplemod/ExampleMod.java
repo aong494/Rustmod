@@ -1,9 +1,14 @@
 package com.example.examplemod;
 
+import com.example.examplemod.effect.ModEffects;
 import com.example.examplemod.gui.*;
 import com.example.examplemod.item.ModItems;
+import com.example.examplemod.network.PacketHandler;
 import com.example.examplemod.sound.ModSounds;
+import com.example.examplemod.world.inventory.ModMenuTypes;
 import com.mojang.logging.LogUtils;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -51,29 +56,37 @@ public class    ExampleMod
                         output.accept(ModItems.DOOR_DUMMY_ITEM.get());
                         output.accept(ModItems.ARMORED_DOOR_ITEM.get());
                         output.accept(ModItems.TOOL_CUPBOARD_ITEM.get());
+                        output.accept(ModItems.RUST_FURNACE_ITEM.get());
+                        output.accept(ModItems.GREEN_KEYCARD_ITEM.get());
+                        output.accept(ModItems.GREEN_KEYCARD_BLOCK_ITEM.get());
+                        output.accept(ModItems.BLUE_KEYCARD_ITEM.get());
+                        output.accept(ModItems.BLUE_KEYCARD_BLOCK_ITEM.get());
+                        output.accept(ModItems.RED_KEYCARD_ITEM.get());
+                        output.accept(ModItems.RED_KEYCARD_BLOCK_ITEM.get());
+                        output.accept(ModItems.KEYCARD_READER_ITEM.get());
                     }).build());
 
     public ExampleMod(FMLJavaModLoadingContext context) {
         IEventBus modEventBus = context.getModEventBus();
         GeckoLib.initialize();
-
         CREATIVE_MODE_TABS.register(modEventBus);
-
         ModBlocks.BLOCKS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        com.example.examplemod.world.inventory.ModMenuTypes.MENUS.register(modEventBus);
         ModSounds.register(modEventBus);
-
+        ModEffects.register(modEventBus);
         modEventBus.addListener(this::commonSetup);
         modEventBus.addListener(this::addCreative);
-        MinecraftForge.EVENT_BUS.register(this);
+        IEventBus forgeBus = MinecraftForge.EVENT_BUS;
+        forgeBus.register(this);
     }
 
-    private void commonSetup(final FMLCommonSetupEvent event)
-    {
-        event.enqueueWork(ModMessages::register);
-        // Some common setup code
-        LOGGER.info("HELLO FROM COMMON SETUP");
+    private void commonSetup(final FMLCommonSetupEvent event) {
+        // 2. 반드시 여기서 PacketHandler.register()를 호출해야 합니다!
+        event.enqueueWork(() -> {
+            PacketHandler.register();
+        });
     }
 
     // Add the example block item to the building blocks tab
@@ -103,8 +116,8 @@ public class    ExampleMod
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
+                MenuScreens.register(ModMenuTypes.RUST_FURNACE_MENU.get(), RustStyleFurnaceScreen::new);
                 // 중복 등록 방지를 위해 각 장치별로 안전하게 등록
-                registerScreen(MenuType.FURNACE, RustStyleFurnaceScreen::new, "Furnace");
                 registerScreen(MenuType.BLAST_FURNACE, RustStyleBlastFurnaceScreen::new, "Blast Furnace");
                 registerScreen(MenuType.SMOKER, RustStyleSmokerScreen::new, "Smoker");
 
@@ -115,6 +128,14 @@ public class    ExampleMod
                         ModBlocks.RUST_FURNACE.get(),
                         net.minecraft.client.renderer.RenderType.cutout()
                 );
+                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                        ModBlocks.GREEN_KEYCARD_BLOCK.get(), // ModBlocks에 등록한 이름
+                        net.minecraft.client.renderer.RenderType.cutout()
+                );
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.GREEN_KEYCARD_BLOCK.get(), RenderType.cutout());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.BLUE_KEYCARD_BLOCK.get(), RenderType.cutout());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.RED_KEYCARD_BLOCK.get(), RenderType.cutout());
+                ItemBlockRenderTypes.setRenderLayer(ModBlocks.KEYCARD_READER.get(), RenderType.cutout());
             });
         }
 

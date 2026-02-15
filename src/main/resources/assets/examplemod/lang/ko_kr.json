@@ -5,5 +5,15 @@
   "item.examplemod.armored_door": "합금 문",
   "block.examplemod.tool_cupboard": "도구함",
   "item.examplemod.tool_cupboard": "도구함",
+  "block.examplemod.rust_furnace": "화로",
+  "item.examplemod.rust_furnace": "화로",
+  "block.examplemod.green_keycard": "초록 키카드",
+  "item.examplemod.green_keycard": "초록 키카드",
+  "block.examplemod.blue_keycard": "파랑 키카드",
+  "item.examplemod.blue_keycard": "파랑 키카드",
+  "block.examplemod.red_keycard": "빨강 키카드",
+  "item.examplemod.red_keycard": "빨강 키카드",
+  "block.examplemod.keycard_reader": "키카드 리더기",
+  "item.examplemod.keycard_reader": "키카드 리더기",
   "creativetab.example_tab": "Rust"
 }

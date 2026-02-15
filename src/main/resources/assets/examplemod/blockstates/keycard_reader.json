@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "examplemod:block/keycard_reader" },
+    "facing=south": { "model": "examplemod:block/keycard_reader", "y": 180 },
+    "facing=west": { "model": "examplemod:block/keycard_reader", "y": 270 },
+    "facing=east": { "model": "examplemod:block/keycard_reader", "y": 90 }
+  }
+}

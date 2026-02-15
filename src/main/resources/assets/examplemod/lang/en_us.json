@@ -5,5 +5,15 @@
   "item.examplemod.armored_door": "Armored Door",
   "block.examplemod.tool_cupboard": "Tool Cupboard",
   "item.examplemod.tool_cupboard": "Tool Cupboard",
+  "block.examplemod.rust_furnace": "Furnace",
+  "item.examplemod.rust_furnace": "Furnace",
+  "block.examplemod.green_keycard": "Green Keycard",
+  "item.examplemod.green_keycard": "Green Keycard",
+  "block.examplemod.blue_keycard": "Blue Keycard",
+  "item.examplemod.blue_keycard": "Blue Keycard",
+  "block.examplemod.red_keycard": "Red Keycard",
+  "item.examplemod.red_keycard": "Red Keycard",
+  "block.examplemod.keycard_reader": "Keycard Reader",
+  "item.examplemod.keycard_reader": "Keycard Reader",
   "creativetab.example_tab": "Rust"
 }

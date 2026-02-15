@@ -1,9 +1,14 @@
 package com.example.examplemod;
 
+import com.example.examplemod.effect.ModEffects;
+import com.example.examplemod.network.PacketHandler;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Pose;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -24,21 +29,36 @@ public class ModAttributeHandler {
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        Player player = event.getEntity();
+        if (!(event.getEntity() instanceof net.minecraft.server.level.ServerPlayer player)) return;
 
-        // 최대 체력 속성 고정
+        // 1. [기존 로직] 최대 체력 속성 고정
         AttributeInstance maxHealthAttr = player.getAttribute(Attributes.MAX_HEALTH);
         if (maxHealthAttr != null) {
             maxHealthAttr.setBaseValue(20.0D);
         }
 
-        // 저장된 체력 값 복구
+        // 2. [기존 로직] 저장된 체력 값 복구 및 배고픔 패킷 전송
         player.getCapability(com.example.examplemod.Hunger.HungerProvider.PLAYER_HUNGER).ifPresent(cap -> {
             float healthToRestore = cap.getSavedHealth();
-            // 만약 저장된 값이 0 이하(사망 상태 등)라면 60으로 초기화
             if (healthToRestore <= 0) healthToRestore = 15.0F;
             player.setHealth(healthToRestore);
+
+            // [추가] 배고픔 데이터 패킷 전송
+            PacketHandler.INSTANCE.send(
+                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                    new com.example.examplemod.Hunger.HungerSyncPacket(cap.getHunger())
+            );
         });
+
+        // 3. [추가] 갈증 데이터 로드 및 패킷 전송
+        player.getCapability(com.example.examplemod.Thirst.ThirstProvider.PLAYER_THIRST).ifPresent(cap -> {
+            PacketHandler.INSTANCE.send(
+                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                    new com.example.examplemod.Thirst.ThirstSyncPacket(cap.getThirst())
+            );
+        });
+
+        // 4. [기존 로직] 장비 동기화
         syncGear(player);
     }
     @SubscribeEvent
@@ -92,7 +112,39 @@ public class ModAttributeHandler {
             });
         }
     }
+    public static void syncPlayerStats(ServerPlayer player) {
+        // 배고픔 동기화
+        player.getCapability(com.example.examplemod.Hunger.HungerProvider.PLAYER_HUNGER).ifPresent(hunger -> {
+            PacketHandler.INSTANCE.send(
+                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                    new com.example.examplemod.Hunger.HungerSyncPacket(hunger.getHunger())
+            );
+        });
 
+        // 갈증 동기화
+        player.getCapability(com.example.examplemod.Thirst.ThirstProvider.PLAYER_THIRST).ifPresent(thirst -> {
+            PacketHandler.INSTANCE.send(
+                    net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player),
+                    new com.example.examplemod.Thirst.ThirstSyncPacket(thirst.getThirst())
+            );
+        });
+    }
+    // 클래스 내부에 추가
+    @SubscribeEvent
+    public static void onPlayerTick(net.minecraftforge.event.TickEvent.PlayerTickEvent event) {
+        // 서버 측에서만 실행하며, 틱의 마지막 단계에서 처리
+        if (event.side.isServer() && event.phase == net.minecraftforge.event.TickEvent.Phase.END) {
+            ServerPlayer player = (ServerPlayer) event.player;
+            if (player.hasEffect(com.example.examplemod.effect.ModEffects.DOWNED.get())) {
+                player.setPose(net.minecraft.world.entity.Pose.SLEEPING);
+            }
+            // 성능을 위해 매 틱(0.05초)마다 보내지 않고, 10틱(0.5초)마다 패킷을 보냅니다.
+            // 숫자를 20으로 바꾸면 1초마다 보냅니다.
+            if (player.level().getGameTime() % 10 == 0) {
+                syncPlayerStats(player);
+            }
+        }
+    }
     // 3. [핵심 추가] 부활 직후에 다시 한번 체력을 60으로 고정
     @SubscribeEvent
     public static void onPlayerRespawn(net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent event) {
@@ -105,19 +157,18 @@ public class ModAttributeHandler {
         }
         player.setHealth(15.0F);
 
-        // 2. 커스텀 배고픔(Hunger)을 100으로 설정 및 클라이언트 동기화
+        // 2. 커스텀 배고픔(Hunger)을 100으로 설정
         player.getCapability(com.example.examplemod.Hunger.HungerProvider.PLAYER_HUNGER).ifPresent(hunger -> {
-            hunger.setHunger(100.0F); // 값을 100으로 고정
-            com.example.examplemod.ModMessages.sendToPlayer(
-                    new com.example.examplemod.Hunger.HungerSyncPacket(hunger.getHunger()), player);
+            hunger.setHunger(100.0F);
         });
 
-        // 3. 커스텀 목마름(Thirst)을 100으로 설정 및 클라이언트 동기화
+        // 3. 커스텀 목마름(Thirst)을 100으로 설정
         player.getCapability(com.example.examplemod.Thirst.ThirstProvider.PLAYER_THIRST).ifPresent(thirst -> {
-            thirst.setThirst(100.0F); // 값을 100으로 고정
-            com.example.examplemod.ModMessages.sendToPlayer(
-                    new com.example.examplemod.Thirst.ThirstSyncPacket(thirst.getThirst()), player);
+            thirst.setThirst(100.0F);
         });
+
+        // [중요] 설정한 값들을 패킷으로 즉시 동기화
+        syncPlayerStats(player);
         syncGear(player);
     }
     @SubscribeEvent

@@ -24,11 +24,12 @@ public class HungerSyncPacket {
     }
 
     // 5. 클라이언트에서 데이터를 받았을 때 실행되는 로직
-    public boolean handle(Supplier<NetworkEvent.Context> supplier) {
+    public void handle(Supplier<NetworkEvent.Context> supplier) {
         NetworkEvent.Context context = supplier.get();
         context.enqueueWork(() -> {
-            ClientHungerData.set(this.hunger);
+            // 클라이언트 데이터 저장소에 서버에서 받은 값 저장
+            com.example.examplemod.Hunger.ClientHungerData.set(this.hunger);
         });
-        return true;
+        context.setPacketHandled(true);
     }
 }
